@@ -1,4 +1,6 @@
 "use client";
+export const dynamic = "force-dynamic";
+
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -19,6 +21,8 @@ type TabType =
   | "pending"
   | "statistics"
   | "goals";
+
+
 
 export default function AdminPage() {
   const router = useRouter();
