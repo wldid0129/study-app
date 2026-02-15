@@ -7,16 +7,36 @@ import {
   addDoc,
   serverTimestamp,
   onSnapshot,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 
 export function useAttendance(user: any) {
-  /* ==============================
-     날짜 포맷 (KST)
-  ============================== */
-  const formatDate = (date: Date) =>
-    date.toLocaleDateString("sv-SE");
 
-  /* ============================== */
+  /* ==============================
+     🔥 날짜 포맷
+  ============================== */
+
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+  const parseDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  };
+
+  /* ==============================
+     🔥 상태 선언 (CalendarCard용 포함)
+  ============================== */
 
   const [attendanceMap, setAttendanceMap] =
     useState<Record<string, string>>({});
@@ -24,22 +44,14 @@ export function useAttendance(user: any) {
   const [totalMap, setTotalMap] =
     useState<Record<string, number>>({});
 
-  const [streak, setStreak] = useState(0);
-
-  const [todayUserSuccessCount, setTodayUserSuccessCount] =
-    useState(0);
-
-  const [weeklyUserSuccessCount, setWeeklyUserSuccessCount] =
-    useState(0);
-
-  const [totalUserCount, setTotalUserCount] =
-    useState(11); // 🔥 고정
-
   const [activeTab, setActiveTab] =
-    useState<"total" | "personal">("total");
+    useState<"total" | "personal" | "history">("total");
 
   const [currentMonth, setCurrentMonth] =
     useState(new Date());
+
+  const [streak, setStreak] =
+    useState(0);
 
   const [modalOpen, setModalOpen] =
     useState(false);
@@ -66,88 +78,53 @@ export function useAttendance(user: any) {
     useState<number>(0);
 
   /* ==============================
-     PERSONAL + 목표 계산
+     🔥 SNAPSHOT
   ============================== */
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.uid) return;
 
     const q = collection(db, "attendances");
 
     const unsub = onSnapshot(q, (snapshot) => {
-      const map: any = {};
+      const personalMap: Record<string, string> = {};
       const approvedDates: string[] = [];
-
-      const today = formatDate(new Date());
-
-      const now = new Date();
-      const firstDayOfWeek = new Date(now);
-      firstDayOfWeek.setDate(
-        now.getDate() - now.getDay()
-      );
-
-      const todaySuccessUsers = new Set<string>();
-      const weeklyUserSum: Record<string, number> = {};
+      const totalDateMap: Record<string, number> = {};
 
       snapshot.forEach((doc) => {
         const d = doc.data();
+        if (!d.date || !d.userId) return;
 
+        const normalizedDate =
+          formatDate(parseDate(d.date));
+
+        // 개인 기록
         if (d.userId === user.uid) {
-          map[d.date] = d.status;
+          personalMap[normalizedDate] =
+            d.status;
+
           if (d.status === "approved") {
-            approvedDates.push(d.date);
+            approvedDates.push(normalizedDate);
           }
         }
 
+        // 전체 승인 집계 (Calendar total탭용)
         if (d.status === "approved") {
-          if (d.date === today && d.problemCount > 0) {
-            todaySuccessUsers.add(d.userId);
-          }
-
-          const recordDate = new Date(d.date);
-          if (recordDate >= firstDayOfWeek) {
-            weeklyUserSum[d.userId] =
-              (weeklyUserSum[d.userId] || 0) +
-              (d.problemCount || 0);
-          }
+          totalDateMap[normalizedDate] =
+            (totalDateMap[normalizedDate] || 0) + 1;
         }
       });
 
-      setAttendanceMap(map);
+      setAttendanceMap(personalMap);
+      setTotalMap(totalDateMap);
       calculateStreak(approvedDates);
-      setTodayUserSuccessCount(todaySuccessUsers.size);
-      setWeeklyUserSuccessCount(
-        Object.keys(weeklyUserSum).length
-      );
     });
 
     return () => unsub();
   }, [user]);
 
   /* ==============================
-     LISTEN TOTAL
-  ============================== */
-
-  useEffect(() => {
-    const q = collection(db, "attendances");
-
-    const unsub = onSnapshot(q, (snapshot) => {
-      const map: any = {};
-      snapshot.forEach((doc) => {
-        const d = doc.data();
-        if (d.status === "approved") {
-          map[d.date] =
-            (map[d.date] || 0) + 1;
-        }
-      });
-      setTotalMap(map);
-    });
-
-    return () => unsub();
-  }, []);
-
-  /* ==============================
-     STREAK
+     🔥 STREAK
   ============================== */
 
   const calculateStreak = (dates: string[]) => {
@@ -165,12 +142,12 @@ export function useAttendance(user: any) {
     yesterday.setDate(today.getDate() - 1);
     const yesterdayKey = formatDate(yesterday);
 
-    let currentDate: Date;
+    let startDate: Date | null = null;
 
     if (dateSet.has(todayKey)) {
-      currentDate = today;
+      startDate = today;
     } else if (dateSet.has(yesterdayKey)) {
-      currentDate = yesterday;
+      startDate = yesterday;
     } else {
       setStreak(0);
       return;
@@ -179,8 +156,8 @@ export function useAttendance(user: any) {
     let count = 0;
 
     for (let i = 0; i < 365; i++) {
-      const d = new Date(currentDate);
-      d.setDate(currentDate.getDate() - i);
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() - i);
       const key = formatDate(d);
 
       if (dateSet.has(key)) count++;
@@ -191,7 +168,7 @@ export function useAttendance(user: any) {
   };
 
   /* ==============================
-     CLOUDINARY
+     🔥 CLOUDINARY
   ============================== */
 
   const uploadToCloudinary = (file: File) => {
@@ -208,10 +185,11 @@ export function useAttendance(user: any) {
       );
 
       xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable)
+        if (e.lengthComputable) {
           setProgress(
             Math.round((e.loaded / e.total) * 100)
           );
+        }
       };
 
       xhr.onload = () => {
@@ -224,15 +202,14 @@ export function useAttendance(user: any) {
   };
 
   /* ==============================
-     SUBMIT (🔥 핵심 수정)
+     🔥 SUBMIT (diff 기반 승인)
   ============================== */
 
-  console.log("현재 problemCount:", problemCount);
-
   const handleAttendance = async () => {
-    if (!file || !user) return;
+    if (!file || !user?.uid) return;
 
-    const todayReal = formatDate(new Date());
+    const todayReal =
+      formatDate(new Date());
 
     if (selectedDate > todayReal) {
       alert("미래 날짜는 선택 불가");
@@ -245,28 +222,83 @@ export function useAttendance(user: any) {
     }
 
     if (problemCount <= 0) {
-      alert("총 문제 개수를 입력하세요.");
+      alert("누적 문제 수를 입력하세요.");
       return;
     }
-
-    // 🔥 제출 시점 값 고정
-    const solvedAtSubmit = Number(problemCount);
-
-    console.log("저장될 문제 개수:", solvedAtSubmit);
 
     setLoading(true);
 
     const imageUrl =
       await uploadToCloudinary(file);
 
-    await addDoc(collection(db, "attendances"), {
-      userId: user.uid,
-      date: selectedDate,
-      imageUrl,
-      problemCount: solvedAtSubmit,
-      status: "pending",
-      createdAt: serverTimestamp(),
-    });
+    /* 🔥 이전 최고 누적값 조회 */
+
+    let previousValue = 0;
+
+    const prevQuery = query(
+      collection(db, "attendances"),
+      where("userId", "==", user.uid),
+      where("status", "==", "approved"),
+      orderBy("problemCount", "desc"),
+      limit(1)
+    );
+
+    const prevSnap =
+      await getDocs(prevQuery);
+
+    if (!prevSnap.empty) {
+      previousValue =
+        prevSnap.docs[0].data()
+          .problemCount;
+    }
+
+    const diff =
+      Number(problemCount) -
+      previousValue;
+
+    if (diff < 0) {
+      alert(
+        "누적 문제 수는 이전 기록보다 작을 수 없습니다."
+      );
+      setLoading(false);
+      return;
+    }
+
+    /* 🔥 목표 설정 확인 */
+
+    let status: "approved" | "pending" =
+      "approved";
+
+    const settingSnap = await getDoc(
+      doc(db, "settings", "system")
+    );
+
+    if (settingSnap.exists()) {
+      const settingData =
+        settingSnap.data();
+
+      if (
+        settingData.dailyGoalEnabled &&
+        diff <
+          settingData.dailyGoalValue
+      ) {
+        status = "pending";
+      }
+    }
+
+    await addDoc(
+      collection(db, "attendances"),
+      {
+        userId: user.uid,
+        date: selectedDate,
+        imageUrl,
+        problemCount:
+          Number(problemCount),
+        status,
+        createdAt:
+          serverTimestamp(),
+      }
+    );
 
     setLoading(false);
     setModalOpen(false);
@@ -278,14 +310,11 @@ export function useAttendance(user: any) {
   return {
     attendanceMap,
     totalMap,
-    streak,
-    todayUserSuccessCount,
-    weeklyUserSuccessCount,
-    totalUserCount,
     activeTab,
     setActiveTab,
     currentMonth,
     setCurrentMonth,
+    streak,
     modalOpen,
     setModalOpen,
     file,

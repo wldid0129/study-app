@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useAdminStats } from "@/hooks/useAdminStats";
 
 import AdminHeader from "@/components/admin/AdminHeader";
 import NoticeManager from "@/components/admin/NoticeManager";
@@ -37,9 +38,22 @@ export default function AdminClient() {
       new Date().toISOString().split("T")[0]
     );
 
+  /* =============================
+     🔥 기존 관리자 로직
+  ============================= */
+
   const admin = useAdmin(selectedDate);
 
-  // URL → state 동기화
+  /* =============================
+     🔥 성장 통계 로직
+  ============================= */
+
+  const adminStats = useAdminStats();
+
+  /* =============================
+     URL → state 동기화
+  ============================= */
+
   useEffect(() => {
     const tab =
       (searchParams.get("tab") as TabType) ||
@@ -47,10 +61,17 @@ export default function AdminClient() {
     setActiveTab(tab);
   }, [searchParams]);
 
-  // state → URL 동기화
+  /* =============================
+     state → URL 동기화
+  ============================= */
+
   useEffect(() => {
     router.replace(`?tab=${activeTab}`);
   }, [activeTab, router]);
+
+  /* =============================
+     상위 탭 목록
+  ============================= */
 
   const tabs: { key: TabType; label: string }[] = [
     { key: "notice", label: "공지" },
@@ -60,8 +81,13 @@ export default function AdminClient() {
     { key: "statistics", label: "통계" },
   ];
 
+  /* =============================
+     탭 렌더링
+  ============================= */
+
   const renderContent = () => {
     switch (activeTab) {
+
       case "notice":
         return (
           <NoticeManager
@@ -83,7 +109,8 @@ export default function AdminClient() {
       case "goal":
         return (
           <div className="bg-white p-6 rounded-xl shadow-sm">
-            {/* goal 서브탭 */}
+
+            {/* Goal 서브탭 */}
             <div className="flex gap-3 mb-6 border-b pb-4">
               {[
                 { key: "daily", label: "Daily Goal" },
@@ -115,6 +142,7 @@ export default function AdminClient() {
             {goalTab === "weekly" && (
               <WeeklyGoalManager />
             )}
+
           </div>
         );
 
@@ -130,8 +158,7 @@ export default function AdminClient() {
       case "statistics":
         return (
           <AdminStatisticsSection
-            ranking={admin.ranking}
-            distribution={admin.distribution}
+            growthStats={adminStats}
           />
         );
 
@@ -140,8 +167,13 @@ export default function AdminClient() {
     }
   };
 
+  /* =============================
+     렌더링
+  ============================= */
+
   return (
     <div className="min-h-screen bg-gray-100 p-12">
+
       <AdminHeader />
 
       {/* 상위 탭 */}
@@ -165,10 +197,11 @@ export default function AdminClient() {
         ))}
       </div>
 
-      {/* 본문 영역 */}
+      {/* 본문 */}
       <div className="transition-all duration-300">
         {renderContent()}
       </div>
+
     </div>
   );
 }

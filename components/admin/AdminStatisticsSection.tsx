@@ -1,110 +1,157 @@
 "use client";
 
+import { AdminUserStat } from "@/hooks/useAdminStats";
+import { useUsers } from "@/hooks/useUsers";
+
 interface Props {
-  ranking: {
-    userId: string;
-    name: string;
-    total: number;
-  }[];
-  distribution: Record<string, number>;
+  growthStats: AdminUserStat[];
 }
 
 export default function AdminStatisticsSection({
-  ranking,
-  distribution,
+  growthStats,
 }: Props) {
 
-  const maxValue = Math.max(
-    ...ranking.map((r) => r.total),
-    1
-  );
+  /* 🔥 유저 닉네임 매핑 */
+  const { userMap } = useUsers();
+
+  const totalRanking =
+    [...growthStats].sort(
+      (a, b) => b.totalSolved - a.totalSolved
+    );
+
+  const weeklyRanking =
+    [...growthStats].sort(
+      (a, b) => b.weeklyDiff - a.weeklyDiff
+    );
+
+  const failedUsers =
+    growthStats.filter(
+      (s) => !s.isTodayApproved
+    );
+
+  const getName = (userId: string) =>
+    userMap[userId]|| "Unknown";
 
   return (
-    <div className="bg-white p-10 rounded-2xl shadow-md mt-10">
+    <div className="space-y-10">
 
-      <h2 className="text-2xl font-bold mb-8">
-        📊 관리자 통계
-      </h2>
+      {/* 📈 성장 통계 카드 */}
+      <div className="grid grid-cols-4 gap-6">
 
-      {/* =========================
-          🏆 랭킹
-      ========================= */}
-      <div className="mb-12">
-        <h3 className="text-lg font-semibold mb-4">
-          전체 랭킹
-        </h3>
+        <StatCard
+          title="전체 누적 1위"
+          value={totalRanking[0]?.totalSolved ?? 0}
+          subtitle={
+            totalRanking[0]
+              ? getName(totalRanking[0].userId)
+              : "-"
+          }
+        />
 
-        {ranking.map((user, index) => (
-          <div
-            key={user.userId}
-            className="flex items-center mb-3"
-          >
-            <div className="w-8 font-bold">
-              {index + 1}
-            </div>
+        <StatCard
+          title="이번 주 성장 1위"
+          value={weeklyRanking[0]?.weeklyDiff ?? 0}
+          subtitle={
+            weeklyRanking[0]
+              ? getName(weeklyRanking[0].userId)
+              : "-"
+          }
+        />
 
-            <div className="w-32 truncate">
-              {user.name}
-            </div>
+        <StatCard
+          title="오늘 미달자"
+          value={failedUsers.length}
+          subtitle="명"
+        />
 
-            <div className="flex-1 bg-gray-200 rounded-full h-5 mx-4 relative">
-              <div
-                className="bg-indigo-600 h-5 rounded-full"
-                style={{
-                  width: `${
-                    (user.total / maxValue) * 100
-                  }%`,
-                }}
-              />
-            </div>
+        <StatCard
+          title="총 사용자"
+          value={growthStats.length}
+          subtitle="명"
+        />
 
-            <div className="w-16 text-right font-semibold">
-              {user.total}
-            </div>
-          </div>
-        ))}
       </div>
 
-      {/* =========================
-          📈 구간 분포
-      ========================= */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">
-          문제 수 구간 분포
-        </h3>
+      {/* 📋 사용자 테이블 */}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full text-sm">
 
-        {Object.entries(distribution).map(
-          ([range, count]) => (
-            <div
-              key={range}
-              className="flex items-center mb-3"
-            >
-              <div className="w-24">
-                {range}
-              </div>
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="p-4 text-left">닉네임</th>
+              <th className="p-4 text-center">누적</th>
+              <th className="p-4 text-center">오늘</th>
+              <th className="p-4 text-center">이번 주</th>
+              <th className="p-4 text-center">목표</th>
+            </tr>
+          </thead>
 
-              <div className="flex-1 bg-gray-200 rounded-full h-5 mx-4 relative">
-                <div
-                  className="bg-green-500 h-5 rounded-full"
-                  style={{
-                    width: `${
-                      (count /
-                        Math.max(
-                          ...Object.values(distribution),
-                          1
-                        )) *
-                      100
-                    }%`,
-                  }}
-                />
-              </div>
+          <tbody>
+            {growthStats.map((s) => (
+              <tr
+                key={s.userId}
+                className="border-b hover:bg-gray-50 transition"
+              >
+                <td className="p-4 font-medium">
+                  {getName(s.userId)}
+                </td>
 
-              <div className="w-10 text-right font-semibold">
-                {count}
-              </div>
-            </div>
-          )
-        )}
+                <td className="p-4 text-center">
+                  {s.totalSolved}
+                </td>
+
+                <td className="p-4 text-center text-blue-600">
+                  +{s.todayDiff}
+                </td>
+
+                <td className="p-4 text-center text-purple-600">
+                  +{s.weeklyDiff}
+                </td>
+
+                <td
+                  className={`p-4 text-center font-semibold ${
+                    s.isTodayApproved
+                      ? "text-green-600"
+                      : "text-red-500"
+                  }`}
+                >
+                  {s.isTodayApproved
+                    ? "달성"
+                    : "미달"}
+                </td>
+
+              </tr>
+            ))}
+          </tbody>
+
+        </table>
+      </div>
+
+    </div>
+  );
+}
+
+/* 카드 컴포넌트 */
+
+function StatCard({
+  title,
+  value,
+  subtitle,
+}: {
+  title: string;
+  value: number;
+  subtitle: string;
+}) {
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-sm">
+      <div className="text-sm text-gray-500 mb-2">
+        {title}
+      </div>
+      <div className="text-2xl font-bold">
+        {value}
+      </div>
+      <div className="text-xs text-gray-400 mt-1 truncate">
+        {subtitle}
       </div>
     </div>
   );

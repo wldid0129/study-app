@@ -23,11 +23,16 @@ import DailyGoalCard from "@/components/goals/DailyGoalCard";
 import GoalMaintenanceCard from "@/components/goals/GoalMaintenanceCard";
 import { useGoals } from "@/hooks/useGoals";
 
+import { useWeeklyRanking } from "@/hooks/useWeeklyRanking";
+import WeeklyRankingCard from "@/components/home/WeeklyRankingCard";
+
 export default function HomePage() {
   const authState = useAuth();
   const attendance = useAttendance(authState.user);
   const noticeState = useNotice();
   const usersState = useUsers();
+
+  const ranking = useWeeklyRanking();
 
   const {
     weeklyGoal,
@@ -41,7 +46,6 @@ export default function HomePage() {
   /* =========================
      USER COUNT (기존 유지)
   ========================= */
-
   useEffect(() => {
     const fetchUsers = async () => {
       await getDocs(collection(db, "users"));
@@ -52,19 +56,13 @@ export default function HomePage() {
   /* =========================
      STATISTICS
   ========================= */
-
   const statistics = useStatistics(
     usersState.userCount,
     usersState.userMap
   );
 
-  /* =========================
-     RENDER
-  ========================= */
-
   return (
     <div className="bg-[#f4f6f9] min-h-screen">
-
       <Header
         user={authState.user}
         onLogout={authState.logout}
@@ -131,11 +129,26 @@ export default function HomePage() {
               attendanceMap={attendance.attendanceMap}
               totalMap={attendance.totalMap}
               userCount={usersState.userCount}
+              userId={authState.user?.uid}
               onOpenModal={() =>
                 attendance.setModalOpen(true)
               }
             />
           </div>
+        </motion.div>
+
+        {/* 🔥 Weekly Ranking */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+          className="mt-8"
+        >
+          <WeeklyRankingCard
+            ranking={ranking}
+            userMap={usersState.userMap}
+            currentUserId={authState.user?.uid}
+          />
         </motion.div>
 
         {/* 🔥 Statistics */}
@@ -157,21 +170,28 @@ export default function HomePage() {
       {/* 🔥 UploadModal */}
       <UploadModal
         modalOpen={attendance.modalOpen}
-        onClose={() => attendance.setModalOpen(false)}
+        onClose={() =>
+          attendance.setModalOpen(false)
+        }
         onSubmit={attendance.handleAttendance}
         selectedDate={attendance.selectedDate}
-        setSelectedDate={attendance.setSelectedDate}
+        setSelectedDate={
+          attendance.setSelectedDate
+        }
         file={attendance.file}
         setFile={attendance.setFile}
         previewUrl={attendance.previewUrl}
-        setPreviewUrl={attendance.setPreviewUrl}
+        setPreviewUrl={
+          attendance.setPreviewUrl
+        }
         loading={attendance.loading}
         progress={attendance.progress}
         fileInputRef={attendance.fileInputRef}
         problemCount={attendance.problemCount}
-        setProblemCount={attendance.setProblemCount}
+        setProblemCount={
+          attendance.setProblemCount
+        }
       />
-
     </div>
   );
 }
