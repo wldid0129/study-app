@@ -4,15 +4,19 @@ import { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
-  query,
-  where,
   addDoc,
   serverTimestamp,
   onSnapshot,
-  getDocs,
 } from "firebase/firestore";
 
 export function useAttendance(user: any) {
+  /* ==============================
+     날짜 포맷 (KST)
+  ============================== */
+  const formatDate = (date: Date) =>
+    date.toLocaleDateString("sv-SE");
+
+  /* ============================== */
 
   const [attendanceMap, setAttendanceMap] =
     useState<Record<string, string>>({});
@@ -22,7 +26,6 @@ export function useAttendance(user: any) {
 
   const [streak, setStreak] = useState(0);
 
-  // 🔥 목표 달성 인원 기준
   const [todayUserSuccessCount, setTodayUserSuccessCount] =
     useState(0);
 
@@ -30,7 +33,7 @@ export function useAttendance(user: any) {
     useState(0);
 
   const [totalUserCount, setTotalUserCount] =
-    useState(0);
+    useState(11); // 🔥 고정
 
   const [activeTab, setActiveTab] =
     useState<"total" | "personal">("total");
@@ -57,22 +60,10 @@ export function useAttendance(user: any) {
     useRef<HTMLInputElement>(null);
 
   const [selectedDate, setSelectedDate] =
-    useState(new Date().toISOString().split("T")[0]);
+    useState(formatDate(new Date()));
 
   const [problemCount, setProblemCount] =
     useState<number>(0);
-
-  /* ==============================
-     전체 유저 수
-  ============================== */
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const snap = await getDocs(collection(db, "users"));
-      setTotalUserCount(snap.size);
-    };
-    fetchUsers();
-  }, []);
 
   /* ==============================
      PERSONAL + 목표 계산
@@ -87,8 +78,7 @@ export function useAttendance(user: any) {
       const map: any = {};
       const approvedDates: string[] = [];
 
-      const today =
-        new Date().toISOString().split("T")[0];
+      const today = formatDate(new Date());
 
       const now = new Date();
       const firstDayOfWeek = new Date(now);
@@ -96,7 +86,6 @@ export function useAttendance(user: any) {
         now.getDate() - now.getDay()
       );
 
-      // 🔥 유저별 누적 계산
       const todaySuccessUsers = new Set<string>();
       const weeklyUserSum: Record<string, number> = {};
 
@@ -111,13 +100,10 @@ export function useAttendance(user: any) {
         }
 
         if (d.status === "approved") {
-
-          // 🔥 오늘 목표 달성 여부 판단은 개별 problemCount 기준
           if (d.date === today && d.problemCount > 0) {
             todaySuccessUsers.add(d.userId);
           }
 
-          // 🔥 주간은 사용자별 누적
           const recordDate = new Date(d.date);
           if (recordDate >= firstDayOfWeek) {
             weeklyUserSum[d.userId] =
@@ -127,19 +113,11 @@ export function useAttendance(user: any) {
         }
       });
 
-      // 🔥 주간 성공 유저 수 계산 (여기선 1 이상이면 성공 처리, 실제 기준은 GoalCard에서)
-      const weeklySuccessCount =
-        Object.keys(weeklyUserSum).length;
-
       setAttendanceMap(map);
       calculateStreak(approvedDates);
-
-      setTodayUserSuccessCount(
-        todaySuccessUsers.size
-      );
-
+      setTodayUserSuccessCount(todaySuccessUsers.size);
       setWeeklyUserSuccessCount(
-        weeklySuccessCount
+        Object.keys(weeklyUserSum).length
       );
     });
 
@@ -147,7 +125,7 @@ export function useAttendance(user: any) {
   }, [user]);
 
   /* ==============================
-     LISTEN TOTAL (캘린더용)
+     LISTEN TOTAL
   ============================== */
 
   useEffect(() => {
@@ -173,15 +151,39 @@ export function useAttendance(user: any) {
   ============================== */
 
   const calculateStreak = (dates: string[]) => {
+    if (!dates.length) {
+      setStreak(0);
+      return;
+    }
+
+    const dateSet = new Set(dates);
+
     const today = new Date();
+    const todayKey = formatDate(today);
+
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const yesterdayKey = formatDate(yesterday);
+
+    let currentDate: Date;
+
+    if (dateSet.has(todayKey)) {
+      currentDate = today;
+    } else if (dateSet.has(yesterdayKey)) {
+      currentDate = yesterday;
+    } else {
+      setStreak(0);
+      return;
+    }
+
     let count = 0;
 
     for (let i = 0; i < 365; i++) {
-      const d = new Date();
-      d.setDate(today.getDate() - i);
-      const key = d.toISOString().split("T")[0];
+      const d = new Date(currentDate);
+      d.setDate(currentDate.getDate() - i);
+      const key = formatDate(d);
 
-      if (dates.includes(key)) count++;
+      if (dateSet.has(key)) count++;
       else break;
     }
 
@@ -222,14 +224,15 @@ export function useAttendance(user: any) {
   };
 
   /* ==============================
-     SUBMIT
+     SUBMIT (🔥 핵심 수정)
   ============================== */
+
+  console.log("현재 problemCount:", problemCount);
 
   const handleAttendance = async () => {
     if (!file || !user) return;
 
-    const todayReal =
-      new Date().toISOString().split("T")[0];
+    const todayReal = formatDate(new Date());
 
     if (selectedDate > todayReal) {
       alert("미래 날짜는 선택 불가");
@@ -241,6 +244,16 @@ export function useAttendance(user: any) {
       return;
     }
 
+    if (problemCount <= 0) {
+      alert("총 문제 개수를 입력하세요.");
+      return;
+    }
+
+    // 🔥 제출 시점 값 고정
+    const solvedAtSubmit = Number(problemCount);
+
+    console.log("저장될 문제 개수:", solvedAtSubmit);
+
     setLoading(true);
 
     const imageUrl =
@@ -250,7 +263,7 @@ export function useAttendance(user: any) {
       userId: user.uid,
       date: selectedDate,
       imageUrl,
-      problemCount: problemCount || 0,
+      problemCount: solvedAtSubmit,
       status: "pending",
       createdAt: serverTimestamp(),
     });

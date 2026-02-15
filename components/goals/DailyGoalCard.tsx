@@ -1,28 +1,17 @@
 "use client";
 
 import Card from "@/components/ui/Card";
-import { Goal } from "@/types/goal";
+import { DisplayGoal, Goal } from "@/types/goal";
 import { motion } from "framer-motion";
 
 export default function DailyGoalCard({
   goal,
-  successCount,
-  totalUserCount,
+  isSuccess,
 }: {
-  goal: Goal | null;
-  successCount: number;
-  totalUserCount: number;
+  goal: DisplayGoal | null;
+  isSuccess: boolean;
 }) {
   if (!goal) return null;
-
-  const percent =
-    totalUserCount > 0
-      ? Math.round(
-          (successCount / totalUserCount) * 100
-        )
-      : 0;
-
-  const achieved = percent === 100;
 
   return (
     <Card className="p-8 border border-gray-200 relative">
@@ -35,31 +24,38 @@ export default function DailyGoalCard({
         {goal.content}
       </div>
 
-      <div className="mt-4 text-sm">
-        {successCount} / {totalUserCount} 명 달성
+      <div className="mt-6 text-sm">
+        목표 기준: 누적 +{goal.targetCount}
       </div>
 
-      <div className="w-full bg-gray-200 h-3 rounded mt-2">
-        <div
-          className="h-3 bg-red-500 rounded transition-all"
-          style={{ width: `${percent}%` }}
-        />
+      {/* 상태 영역 */}
+      <div className="mt-6">
+
+        {isSuccess ? (
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-green-100 text-green-700 px-4 py-3 rounded-lg text-sm font-semibold"
+          >
+            🎉 오늘 목표 달성!
+          </motion.div>
+        ) : (
+          <div className="bg-gray-100 text-gray-600 px-4 py-3 rounded-lg text-sm">
+            아직 목표를 달성하지 못했습니다.
+          </div>
+        )}
+
       </div>
 
-      <div className="text-xs mt-2 text-gray-500">
-        달성률 {percent}%
-      </div>
-
-      {achieved && (
+      {isSuccess && (
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           className="absolute top-4 right-4 bg-green-400 text-black px-3 py-1 rounded-full text-xs font-bold"
         >
-          🎉 전원 달성
+          SUCCESS
         </motion.div>
       )}
-
     </Card>
   );
 }

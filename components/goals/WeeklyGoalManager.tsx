@@ -1,47 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  addDoc,
   collection,
-  serverTimestamp,
-  getDocs,
   query,
   where,
+  getDocs,
   updateDoc,
+  addDoc,
   doc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export default function WeeklyGoalManager() {
-  const [content, setContent] = useState("");
-  const [targetCount, setTargetCount] = useState<number>(0);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [targetCount, setTargetCount] =
+    useState<number>(10);
 
-  const handleSave = async () => {
-    console.log("🔥 주간 목표 저장 클릭");
+  const [goalId, setGoalId] =
+    useState<string | null>(null);
 
-    if (!content.trim()) {
-      alert("목표 내용을 입력하세요");
-      return;
-    }
+  const [active, setActive] =
+    useState<boolean>(true);
 
-    if (!startDate || !endDate) {
-      alert("기간을 선택하세요");
-      return;
-    }
+  const [saving, setSaving] =
+    useState(false);
 
-    if (!targetCount || targetCount <= 0) {
-      alert("목표 문제 수를 입력하세요");
-      return;
-    }
+  /* =========================
+     기존 목표 불러오기
+  ========================= */
 
-    try {
-      setSaving(true);
-
-      // 🔥 기존 active weekly 비활성화
+  useEffect(() => {
+    const fetchGoal = async () => {
       const q = query(
         collection(db, "goals"),
         where("type", "==", "weekly"),
@@ -50,83 +40,99 @@ export default function WeeklyGoalManager() {
 
       const snap = await getDocs(q);
 
-      for (const d of snap.docs) {
-        await updateDoc(doc(db, "goals", d.id), {
-          active: false,
+      if (!snap.empty) {
+        const docData = snap.docs[0];
+        const data = docData.data();
+
+        setGoalId(docData.id);
+        setTargetCount(data.targetCount || 10);
+        setActive(true);
+      }
+    };
+
+    fetchGoal();
+  }, []);
+
+  /* =========================
+     저장
+  ========================= */
+
+  const handleSave = async () => {
+    if (targetCount <= 0) {
+      alert("목표 수를 입력하세요");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      if (goalId) {
+        await updateDoc(
+          doc(db, "goals", goalId),
+          {
+            targetCount,
+            content: `주간 목표: 누적 +${targetCount}`,
+            active,
+            updatedAt: serverTimestamp(),
+          }
+        );
+      } else {
+        await addDoc(collection(db, "goals"), {
+          type: "weekly",
+          targetCount,
+          content: `주간 목표: 누적 +${targetCount}`,
+          active,
+          createdAt: serverTimestamp(),
         });
       }
 
-      // 🔥 새 목표 저장
-      await addDoc(collection(db, "goals"), {
-        type: "weekly",
-        content,
-        targetCount,
-        startDate,
-        endDate,
-        active: true,
-        createdAt: serverTimestamp(),
-      });
-
-      console.log("✅ 주간 목표 저장 완료");
-
       alert("주간 목표 저장 완료");
-
-      // 🔥 입력 초기화
-      setContent("");
-      setTargetCount(0);
-      setStartDate("");
-      setEndDate("");
-
     } catch (err) {
-      console.error("❌ 주간 목표 저장 실패:", err);
-      alert("저장 중 오류 발생");
+      console.error(err);
+      alert("저장 실패");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="bg-white p-8 rounded-xl shadow space-y-4">
+    <div className="bg-white p-8 rounded-xl shadow space-y-6">
 
       <h2 className="text-lg font-semibold">
         🎯 주간 목표 설정
       </h2>
 
-      <input
-        className="border p-2 w-full"
-        placeholder="목표 내용"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
-
-      <input
-        type="number"
-        className="border p-2 w-full"
-        placeholder="목표 문제 수"
-        value={targetCount || ""}
-        onChange={(e) =>
-          setTargetCount(Number(e.target.value))
-        }
-      />
-
-      <div className="flex gap-4">
+      <div>
+        <label className="text-sm text-gray-500">
+          목표 문제 수 (주간 누적 증가량)
+        </label>
         <input
-          type="date"
-          className="border p-2"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-        />
-
-        <input
-          type="date"
-          className="border p-2"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
+          type="number"
+          min={1}
+          className="border p-2 w-full mt-2 rounded"
+          value={targetCount}
+          onChange={(e) =>
+            setTargetCount(
+              Number(e.target.value)
+            )
+          }
         />
       </div>
 
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) =>
+            setActive(e.target.checked)
+          }
+        />
+        <span className="text-sm">
+          목표 활성화
+        </span>
+      </div>
+
       <button
-        type="button"
         onClick={handleSave}
         disabled={saving}
         className={`px-4 py-2 rounded text-white transition ${
@@ -141,4 +147,3 @@ export default function WeeklyGoalManager() {
     </div>
   );
 }
-

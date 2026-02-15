@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { db } from "@/lib/firebase";
@@ -20,6 +20,7 @@ import { useUsers } from "@/hooks/useUsers";
 
 import WeeklyGoalCard from "@/components/goals/WeeklyGoalCard";
 import DailyGoalCard from "@/components/goals/DailyGoalCard";
+import GoalMaintenanceCard from "@/components/goals/GoalMaintenanceCard";
 import { useGoals } from "@/hooks/useGoals";
 
 export default function HomePage() {
@@ -28,24 +29,23 @@ export default function HomePage() {
   const noticeState = useNotice();
   const usersState = useUsers();
 
-  const [problemCount, setProblemCount] = useState(0);
-  const [userCount, setUserCount] = useState(1);
-
-  const { weeklyGoal, dailyGoal } = useGoals();
-
+  const {
+    weeklyGoal,
+    dailyGoal,
+    isDailySuccess,
+    isWeeklySuccess,
+    isDailyActive,
+    isWeeklyActive,
+  } = useGoals(authState.user?.uid);
 
   /* =========================
-     USER COUNT
+     USER COUNT (기존 유지)
   ========================= */
 
   useEffect(() => {
     const fetchUsers = async () => {
-      const usersSnap = await getDocs(
-        collection(db, "users")
-      );
-      setUserCount(usersSnap.size || 1);
+      await getDocs(collection(db, "users"));
     };
-
     fetchUsers();
   }, []);
 
@@ -89,24 +89,29 @@ export default function HomePage() {
           className="flex gap-8 mt-8 items-stretch"
         >
           <div className="flex-1">
-            <WeeklyGoalCard
-              goal={weeklyGoal}
-              successCount={attendance.weeklyUserSuccessCount}
-              totalUserCount={attendance.totalUserCount}
-            />
+            {!isWeeklyActive ? (
+              <GoalMaintenanceCard title="주간 목표 점검 중" />
+            ) : (
+              <WeeklyGoalCard
+                goal={weeklyGoal}
+                isSuccess={isWeeklySuccess}
+              />
+            )}
           </div>
 
           <div className="flex-1">
-            <DailyGoalCard
-              goal={dailyGoal}
-              successCount={attendance.todayUserSuccessCount}
-              totalUserCount={attendance.totalUserCount}
-            />
+            {!isDailyActive ? (
+              <GoalMaintenanceCard title="일일 목표 점검 중" />
+            ) : (
+              <DailyGoalCard
+                goal={dailyGoal}
+                isSuccess={isDailySuccess}
+              />
+            )}
           </div>
         </motion.div>
 
-
-        {/* 🔥 Streak + Calendar 영역 */}
+        {/* 🔥 Streak + Calendar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -149,6 +154,7 @@ export default function HomePage() {
 
       </div>
 
+      {/* 🔥 UploadModal */}
       <UploadModal
         modalOpen={attendance.modalOpen}
         onClose={() => attendance.setModalOpen(false)}
@@ -162,9 +168,10 @@ export default function HomePage() {
         loading={attendance.loading}
         progress={attendance.progress}
         fileInputRef={attendance.fileInputRef}
-        problemCount={problemCount}
-        setProblemCount={setProblemCount}
+        problemCount={attendance.problemCount}
+        setProblemCount={attendance.setProblemCount}
       />
+
     </div>
   );
 }
