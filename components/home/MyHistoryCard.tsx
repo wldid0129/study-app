@@ -7,7 +7,7 @@ interface Props {
   thisWeekTotal: number;
   lastWeekTotal: number;
   allTimeTotal: number;
-  isReady: boolean;
+  isReady?: boolean;
 }
 
 export default function MyHistoryCard({
