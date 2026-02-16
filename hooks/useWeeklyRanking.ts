@@ -37,36 +37,63 @@ export function useWeeklyRanking() {
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
-      const userTotals: Record<
-        string,
-        number
-      > = {};
+  const userRecords: Record<
+    string,
+    { date: Date; total: number }[]
+  > = {};
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    const recordDate = new Date(data.date);
 
-        const recordDate = new Date(
-          data.date
-        );
+    if (recordDate >= weekStart) {
+      if (!userRecords[data.userId]) {
+        userRecords[data.userId] = [];
+      }
 
-        if (recordDate >= weekStart) {
-          userTotals[data.userId] =
-            (userTotals[data.userId] || 0) +
-            (data.problemCount || 0);
-        }
+      userRecords[data.userId].push({
+        date: recordDate,
+        total: data.problemCount || 0,
       });
+    }
+  });
 
-      const sorted = Object.entries(
-        userTotals
-      )
-        .map(([userId, total]) => ({
-          userId,
-          total,
-        }))
-        .sort((a, b) => b.total - a.total);
+  const userTotals: Record<string, number> =
+    {};
 
-      setRanking(sorted);
-    });
+  Object.entries(userRecords).forEach(
+    ([userId, records]) => {
+      // 날짜 정렬
+      records.sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      );
+
+      let weeklyIncrease = 0;
+
+      for (let i = 1; i < records.length; i++) {
+        const diff =
+          records[i].total -
+          records[i - 1].total;
+
+        if (diff > 0) {
+          weeklyIncrease += diff;
+        }
+      }
+
+      userTotals[userId] = weeklyIncrease;
+    }
+  );
+
+  const sorted = Object.entries(userTotals)
+    .map(([userId, total]) => ({
+      userId,
+      total,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  setRanking(sorted);
+});
+
 
     return () => unsub();
   }, []);
