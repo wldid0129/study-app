@@ -113,7 +113,7 @@ export default function MyHistoryCard({
           <div className="text-xs text-gray-500 mt-2">
             출석 제출 {submissionCount}회
             <br />
-            2회 이상이면 자동으로 열립니다. (2주 조건 아님)
+            2회 이상이면 자동으로 열립니다. 
           </div>
 
         </div>
