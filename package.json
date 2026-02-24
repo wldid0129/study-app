@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:work": "scripts\\dev-sync-work.bat",
+    "devwork": "npm run dev:work",
+    "run:local": "npm run dev",
+    "publish:work": "scripts\\publish-work.bat",
+    "where:code": "git branch --show-current && git log --oneline -n 5 && git branch -vv",
+    "flow:sync": "scripts\\full-flow.bat sync",
+    "flow:publish": "scripts\\full-flow.bat publish",
+    "flow:deploy": "scripts\\full-flow.bat deploy"
   },
   "dependencies": {
     "canvas-confetti": "^1.9.4",

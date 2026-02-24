@@ -13,6 +13,7 @@ interface HistoryResult {
   allTimeTotal: number;
   weeklyBreakdown: Record<string, number>;
   isReady: boolean;
+  submissionCount: number;
 }
 
 export function useMyHistory(userId?: string): HistoryResult {
@@ -26,6 +27,8 @@ export function useMyHistory(userId?: string): HistoryResult {
     useState<Record<string, number>>({});
   const [isReady, setIsReady] =
     useState(false);
+  const [submissionCount, setSubmissionCount] =
+    useState(0);
 
   const getWeekStart = (base: Date) => {
     const day = base.getDay();
@@ -37,137 +40,138 @@ export function useMyHistory(userId?: string): HistoryResult {
     return monday;
   };
 
+  const parseDate = (value: unknown) => {
+    if (typeof value !== "string") return null;
+
+    const normalized = value.trim();
+    if (!normalized) return null;
+
+    const dateOnly = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (dateOnly) {
+      const [, y, m, d] = dateOnly;
+      const parsed = new Date(
+        Number(y),
+        Number(m) - 1,
+        Number(d)
+      );
+
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    return parsed;
+  };
+
   useEffect(() => {
     if (!userId) return;
 
     const attendanceQuery = query(
       collection(db, "attendances"),
-      where("userId", "==", userId),
-      where("status", "==", "approved")
+      where("userId", "==", userId)
     );
 
-    const unsub = onSnapshot(
-      attendanceQuery,
-      (snapshot) => {
-        const records: {
-          date: Date;
-          value: number;
-        }[] = [];
+    const unsub = onSnapshot(attendanceQuery, (snapshot) => {
+      const approvedRecords: {
+        date: Date;
+        value: number;
+      }[] = [];
 
-        snapshot.forEach((doc) => {
-          const data = doc.data();
+      let totalSubmissions = 0;
 
-          if (!data.date || !data.problemCount)
-            return;
+      snapshot.forEach((doc) => {
+        const data = doc.data();
 
-          records.push({
-            date: new Date(data.date),
-            value: data.problemCount,
-          });
+        const parsedDate = parseDate(data.date);
+        if (!parsedDate) return;
+
+        totalSubmissions += 1;
+
+        if (data.status !== "approved") return;
+
+        const value = Number(data.problemCount);
+        if (!Number.isFinite(value)) return;
+
+        approvedRecords.push({
+          date: parsedDate,
+          value,
         });
+      });
 
-        if (records.length === 0) {
-          setAllTimeTotal(0);
-          setThisWeekTotal(0);
-          setLastWeekTotal(0);
-          setWeeklyBreakdown({});
-          setIsReady(false);
-          return;
-        }
+      // 히스토리 카드 잠금 해제 기준: 제출(상태 무관) 2회 이상
+      setSubmissionCount(totalSubmissions);
+      setIsReady(totalSubmissions >= 2);
 
-        // 날짜 정렬
-        records.sort(
-          (a, b) =>
-            a.date.getTime() - b.date.getTime()
-        );
-
-        const latest =
-          records[records.length - 1].value;
-
-        setAllTimeTotal(latest);
-
-        const now = new Date();
-        const thisWeekStart =
-          getWeekStart(now);
-        const lastWeekStart =
-          getWeekStart(
-            new Date(
-              now.getFullYear(),
-              now.getMonth(),
-              now.getDate() - 7
-            )
-          );
-
-        let thisWeekLast = 0;
-        let lastWeekLast = 0;
-        let beforeLastWeekLast = 0;
-
-        records.forEach((r) => {
-          if (r.date < lastWeekStart) {
-            beforeLastWeekLast = r.value;
-          } else if (
-            r.date >= lastWeekStart &&
-            r.date < thisWeekStart
-          ) {
-            lastWeekLast = r.value;
-          } else if (r.date >= thisWeekStart) {
-            thisWeekLast = r.value;
-          }
-        });
-
-        setThisWeekTotal(
-          thisWeekLast - lastWeekLast
-        );
-
-        setLastWeekTotal(
-          lastWeekLast - beforeLastWeekLast
-        );
-
-        // 주간 breakdown (증가량 기반)
-        const breakdown: Record<
-          string,
-          number
-        > = {};
-
-        let prev = 0;
-
-        records.forEach((r) => {
-          const weekKey =
-            getWeekStart(r.date)
-              .toISOString()
-              .split("T")[0];
-
-          const diff = r.value - prev;
-          prev = r.value;
-
-          breakdown[weekKey] =
-            (breakdown[weekKey] || 0) + diff;
-        });
-
-        setWeeklyBreakdown(breakdown);
-
-        /* =========================
-           🔒 히스토리 오픈 조건
-        ========================= */
-
-        const uniqueWeeks = new Set(
-          records.map((r) =>
-            getWeekStart(r.date)
-              .toISOString()
-              .split("T")[0]
-          )
-        );
-
-        if (
-          records.length >= 7 &&
-          uniqueWeeks.size >= 2
-        ) {
-          setIsReady(true);
-        } else {
-          setIsReady(false);
-        }
+      if (approvedRecords.length === 0) {
+        setAllTimeTotal(0);
+        setThisWeekTotal(0);
+        setLastWeekTotal(0);
+        setWeeklyBreakdown({});
+        return;
       }
-    );
+
+      approvedRecords.sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      );
+
+      const latest =
+        approvedRecords[approvedRecords.length - 1].value;
+
+      setAllTimeTotal(latest);
+
+      const now = new Date();
+      const thisWeekStart = getWeekStart(now);
+      const lastWeekStart = getWeekStart(
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate() - 7
+        )
+      );
+
+      let thisWeekLast = 0;
+      let lastWeekLast = 0;
+      let beforeLastWeekLast = 0;
+
+      approvedRecords.forEach((r) => {
+        if (r.date < lastWeekStart) {
+          beforeLastWeekLast = r.value;
+        } else if (
+          r.date >= lastWeekStart &&
+          r.date < thisWeekStart
+        ) {
+          lastWeekLast = r.value;
+        } else if (r.date >= thisWeekStart) {
+          thisWeekLast = r.value;
+        }
+      });
+
+      setThisWeekTotal(thisWeekLast - lastWeekLast);
+      setLastWeekTotal(
+        lastWeekLast - beforeLastWeekLast
+      );
+
+      const breakdown: Record<string, number> = {};
+      let prev = 0;
+
+      approvedRecords.forEach((r) => {
+        const weekKey = getWeekStart(r.date)
+          .toISOString()
+          .split("T")[0];
+
+        const diff = r.value - prev;
+        prev = r.value;
+
+        breakdown[weekKey] =
+          (breakdown[weekKey] || 0) + diff;
+      });
+
+      setWeeklyBreakdown(breakdown);
+    });
 
     return () => unsub();
   }, [userId]);
@@ -178,5 +182,6 @@ export function useMyHistory(userId?: string): HistoryResult {
     allTimeTotal,
     weeklyBreakdown,
     isReady,
+    submissionCount,
   };
 }

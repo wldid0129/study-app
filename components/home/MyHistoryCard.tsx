@@ -8,6 +8,7 @@ interface Props {
   lastWeekTotal: number;
   allTimeTotal: number;
   isReady?: boolean;
+  submissionCount?: number;
 }
 
 export default function MyHistoryCard({
@@ -15,6 +16,7 @@ export default function MyHistoryCard({
   lastWeekTotal,
   allTimeTotal,
   isReady,
+  submissionCount = 0,
 }: Props) {
 
   const diff = thisWeekTotal - lastWeekTotal;
@@ -109,9 +111,9 @@ export default function MyHistoryCard({
           </div>
 
           <div className="text-xs text-gray-500 mt-2">
-            최소 2주 이상의 기록이 쌓이면
+            출석 제출 {submissionCount}회
             <br />
-            자동으로 열립니다.
+            2회 이상이면 자동으로 열립니다. (2주 조건 아님)
           </div>
 
         </div>

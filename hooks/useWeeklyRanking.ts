@@ -28,72 +28,102 @@ export function useWeeklyRanking() {
     return monday;
   };
 
-  useEffect(() => {
-    const weekStart = getWeekStart();
+  const parseDate = (value: unknown) => {
+    if (typeof value !== "string") return null;
 
+    const normalized = value.trim();
+    if (!normalized) return null;
+
+    const dateOnly = normalized.match(
+      /^(\d{4})-(\d{2})-(\d{2})$/
+    );
+
+    if (dateOnly) {
+      const [, y, m, d] = dateOnly;
+      const parsed = new Date(
+        Number(y),
+        Number(m) - 1,
+        Number(d)
+      );
+
+      if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    return parsed;
+  };
+
+  useEffect(() => {
     const q = query(
       collection(db, "attendances"),
       where("status", "==", "approved")
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
-  const userRecords: Record<
-    string,
-    { date: Date; total: number }[]
-  > = {};
+      const weekStart = getWeekStart();
 
-  snapshot.forEach((doc) => {
-    const data = doc.data();
-    const recordDate = new Date(data.date);
+      const userRecords: Record<
+        string,
+        { date: Date; total: number }[]
+      > = {};
 
-    if (recordDate >= weekStart) {
-      if (!userRecords[data.userId]) {
-        userRecords[data.userId] = [];
-      }
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (!data.userId || !data.date) return;
 
-      userRecords[data.userId].push({
-        date: recordDate,
-        total: data.problemCount || 0,
-      });
-    }
-  });
+        const recordDate = parseDate(data.date);
+        if (!recordDate) return;
 
-  const userTotals: Record<string, number> =
-    {};
+        const total = Number(data.problemCount ?? 0);
+        if (!Number.isFinite(total)) return;
 
-  Object.entries(userRecords).forEach(
-    ([userId, records]) => {
-      // 날짜 정렬
-      records.sort(
-        (a, b) => a.date.getTime() - b.date.getTime()
-      );
-
-      let weeklyIncrease = 0;
-
-      for (let i = 1; i < records.length; i++) {
-        const diff =
-          records[i].total -
-          records[i - 1].total;
-
-        if (diff > 0) {
-          weeklyIncrease += diff;
+        if (!userRecords[data.userId]) {
+          userRecords[data.userId] = [];
         }
-      }
 
-      userTotals[userId] = weeklyIncrease;
-    }
-  );
+        userRecords[data.userId].push({
+          date: recordDate,
+          total,
+        });
+      });
 
-  const sorted = Object.entries(userTotals)
-    .map(([userId, total]) => ({
-      userId,
-      total,
-    }))
-    .sort((a, b) => b.total - a.total);
+      const sorted = Object.entries(userRecords)
+        .map(([userId, records]) => {
+          records.sort(
+            (a, b) => a.date.getTime() - b.date.getTime()
+          );
 
-  setRanking(sorted);
-});
+          const beforeWeek = records
+            .filter((r) => r.date < weekStart)
+            .at(-1);
 
+          const inWeek = records.filter(
+            (r) => r.date >= weekStart
+          );
+
+          if (!inWeek.length) {
+            return { userId, total: 0 };
+          }
+
+          const weekLast = inWeek[inWeek.length - 1];
+          const baseline = beforeWeek?.total ?? 0;
+
+          return {
+            userId,
+            total: Math.max(0, weekLast.total - baseline),
+          };
+        })
+        .filter((item) => item.total > 0)
+        .sort((a, b) => b.total - a.total);
+
+      setRanking(sorted);
+    });
 
     return () => unsub();
   }, []);

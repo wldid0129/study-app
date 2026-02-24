@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Study App: Sync work + Dev",
+      "type": "process",
+      "command": "cmd",
+      "args": [
+        "/c",
+        "scripts\\dev-sync-work.bat"
+      ],
+      "windows": {
+        "command": "cmd",
+        "args": [
+          "/c",
+          "scripts\\dev-sync-work.bat"
+        ]
+      },
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Study App: Sync work + Dev (npm)",
+      "type": "npm",
+      "script": "dev:work",
+      "problemMatcher": []
+    }
+  ]
+}

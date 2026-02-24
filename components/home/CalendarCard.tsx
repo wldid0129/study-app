@@ -156,6 +156,8 @@ export default function CalendarCard({
           allTimeTotal={
             history.allTimeTotal
           }
+          isReady={history.isReady}
+          submissionCount={history.submissionCount}
         />
       )}
 
