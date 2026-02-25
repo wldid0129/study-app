@@ -35,13 +35,11 @@ export function useAuth() {
 
       setUser(u);
 
-      /* =========================
-         🔥 1. 이메일로 기존 유저 검색
-      ========================= */
+      const userEmail = u.email?.toLowerCase().trim();
 
       const q = query(
         collection(db, "users"),
-        where("email", "==", u.email)
+        where("email", "==", userEmail)
       );
 
       const snapshot = await getDocs(q);
@@ -49,13 +47,13 @@ export function useAuth() {
       let finalDocRef;
 
       if (!snapshot.empty) {
-        // 기존 수동 유저 발견
+        // 기존 수동 유저 발견 (이메일 기준)
         const existingDoc = snapshot.docs[0];
 
         finalDocRef = doc(db, "users", existingDoc.id);
 
         await updateDoc(finalDocRef, {
-          uid: u.uid,
+          uid: u.uid, // 실제 Firebase UID로 업데이트
           legacy: false,
           photoURL: u.photoURL,
         });
@@ -64,10 +62,10 @@ export function useAuth() {
         finalDocRef = doc(db, "users", u.uid);
 
         await setDoc(finalDocRef, {
-          email: u.email,
+          email: userEmail,
           name: u.displayName,
           photoURL: u.photoURL,
-          role: "user",
+          role: "viewer", // 기본 권한은 viewer (출석 전까지 인원수 제외)
           createdAt: serverTimestamp(),
           uid: u.uid,
           legacy: false,

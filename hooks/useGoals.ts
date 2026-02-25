@@ -127,17 +127,17 @@ export function useGoals(userId?: string) {
 
         setIsDailySuccess(
           todayTotal - yesterdayTotal >=
-            dailyTarget
+          dailyTarget
         );
 
-        // 🔥 Weekly 계산
+        // 🔥 Weekly 계산 (월요일 시작)
         const weekStart = new Date(today);
-        weekStart.setDate(
-          today.getDate() - today.getDay()
-        );
+        const day = weekStart.getDay();
+        const diff = day === 0 ? 6 : day - 1;
+        weekStart.setDate(today.getDate() - diff);
+        weekStart.setHours(0, 0, 0, 0);
 
-        const weekStartKey =
-          formatDate(weekStart);
+        const weekStartKey = formatDate(weekStart);
 
         const weekStartTotal =
           records[weekStartKey] || 0;
@@ -148,7 +148,7 @@ export function useGoals(userId?: string) {
 
         setIsWeeklySuccess(
           todayTotal - weekStartTotal >=
-            weeklyTarget
+          weeklyTarget
         );
       }
     );
@@ -157,18 +157,18 @@ export function useGoals(userId?: string) {
   }, [userId, dailyGoal, weeklyGoal]);
 
   return {
-  dailyGoal: {
-    content: dailyGoal?.content ?? `일일 목표: 누적 +${DEFAULT_DAILY_TARGET}`,
-    targetCount: dailyGoal?.targetCount ?? DEFAULT_DAILY_TARGET,
-  },
-  weeklyGoal: {
-    content: weeklyGoal?.content ?? `주간 목표: 누적 +${DEFAULT_WEEKLY_TARGET}`,
-    targetCount: weeklyGoal?.targetCount ?? DEFAULT_WEEKLY_TARGET,
-  },
-  isDailySuccess,
-  isWeeklySuccess,
-  isDailyActive: dailyGoal?.active ?? false,
-  isWeeklyActive: weeklyGoal?.active ?? false,
-};
+    dailyGoal: {
+      content: dailyGoal?.content ?? `일일 목표: 누적 +${DEFAULT_DAILY_TARGET}`,
+      targetCount: dailyGoal?.targetCount ?? DEFAULT_DAILY_TARGET,
+    },
+    weeklyGoal: {
+      content: weeklyGoal?.content ?? `주간 목표: 누적 +${DEFAULT_WEEKLY_TARGET}`,
+      targetCount: weeklyGoal?.targetCount ?? DEFAULT_WEEKLY_TARGET,
+    },
+    isDailySuccess,
+    isWeeklySuccess,
+    isDailyActive: dailyGoal?.active ?? false,
+    isWeeklyActive: weeklyGoal?.active ?? false,
+  };
 
 }

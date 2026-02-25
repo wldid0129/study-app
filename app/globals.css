@@ -3,11 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --brand-color: #4f46e5; /* Default indigo-600 */
+  --brand-hover: #4338ca; /* Default indigo-700 */
+  --brand-light: #e0e7ff; /* Default indigo-100 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand-color);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-light: var(--brand-light);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

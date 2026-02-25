@@ -1,3 +1,5 @@
+import { useTheme } from "@/context/ThemeContext";
+
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
@@ -11,19 +13,21 @@ export default function Button({
   variant = "primary",
   className,
 }: ButtonProps) {
+  const { currentColors } = useTheme();
 
   const base =
     "px-4 py-2 rounded-xl text-sm font-medium transition";
 
   const styles =
     variant === "primary"
-      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+      ? "text-white"
       : "bg-gray-200 hover:bg-gray-300";
 
   return (
     <button
       onClick={onClick}
       className={`${base} ${styles} ${className || ""}`}
+      style={variant === "primary" ? { backgroundColor: currentColors.main } : {}}
     >
       {children}
     </button>

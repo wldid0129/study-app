@@ -8,23 +8,25 @@ import {
   updateDoc,
   doc,
   serverTimestamp,
+  query,
+  orderBy,
 } from "firebase/firestore";
 
 export function useNotice() {
   const [notice, setNotice] = useState<any>(null);
+  const [noticeList, setNoticeList] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      collection(db, "notices"),
-      (snapshot) => {
-        if (!snapshot.empty) {
-          const d = snapshot.docs[0];
-          setNotice({ id: d.id, ...d.data() });
-        }
+    const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setNoticeList(list);
+      if (list.length > 0) {
+        setNotice(list[0]);
       }
-    );
+    });
 
     return () => unsub();
   }, []);
@@ -45,6 +47,7 @@ export function useNotice() {
 
   return {
     notice,
+    noticeList,
     editing,
     setEditing,
     editContent,

@@ -60,22 +60,28 @@ export function useStatistics(
       const todayKey =
         now.toISOString().split("T")[0];
 
-      const weekAgo = new Date();
-      weekAgo.setDate(now.getDate() - 6);
+      // 🔥 월요일 시작 주간 계산
+      const day = now.getDay(); // 0=일요일
+      const diff = day === 0 ? 6 : day - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - diff);
+      weekStart.setHours(0, 0, 0, 0);
 
       const monthlyCount: Record<string, number> = {};
       const weeklyCount: Record<string, number> = {};
       let todayCount = 0;
 
       attendanceRaw.forEach((item) => {
-
-        const dateObj = new Date(item.date);
+        // item.date is "YYYY-MM-DD"
+        const [y, m, d] = item.date.split("-").map(Number);
+        const dateObj = new Date(y, m - 1, d);
 
         if (item.date === todayKey) {
           todayCount++;
         }
 
-        if (dateObj >= weekAgo) {
+        // 이번 주 (월요일 00:00:00 ~ 현재)
+        if (dateObj >= weekStart) {
           weeklyCount[item.userId] =
             (weeklyCount[item.userId] || 0) + 1;
         }

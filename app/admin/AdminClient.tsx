@@ -9,7 +9,9 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import NoticeManager from "@/components/admin/NoticeManager";
 import AttendanceBoard from "@/components/admin/AttendanceBoard";
 import PendingSection from "@/components/admin/PendingSection";
+import InteractionManager from "@/components/admin/InteractionManager";
 import AdminStatisticsSection from "@/components/admin/AdminStatisticsSection";
+import UserManagementBoard from "@/components/admin/UserManagementBoard";
 
 import DailyGoalManager from "@/components/goals/DailyGoalManager";
 import WeeklyGoalManager from "@/components/goals/WeeklyGoalManager";
@@ -17,8 +19,10 @@ import WeeklyGoalManager from "@/components/goals/WeeklyGoalManager";
 type TabType =
   | "notice"
   | "attendance"
+  | "users"
   | "goal"
   | "pending"
+  | "interaction"
   | "statistics";
 
 type GoalTabType = "daily" | "weekly";
@@ -76,8 +80,10 @@ export default function AdminClient() {
   const tabs: { key: TabType; label: string }[] = [
     { key: "notice", label: "공지" },
     { key: "attendance", label: "출석" },
+    { key: "users", label: "회원관리" },
     { key: "goal", label: "목표" },
     { key: "pending", label: "승인대기" },
+    { key: "interaction", label: "소통관리" },
     { key: "statistics", label: "통계" },
   ];
 
@@ -91,9 +97,15 @@ export default function AdminClient() {
       case "notice":
         return (
           <NoticeManager
+            noticeTitle={admin.noticeTitle}
+            setNoticeTitle={admin.setNoticeTitle}
             noticeContent={admin.noticeContent}
             setNoticeContent={admin.setNoticeContent}
+            noticeList={admin.noticeList}
             onSave={admin.saveNotice}
+            onDelete={admin.deleteNotice}
+            loading={admin.saveLoading}
+            success={admin.saveSuccess}
           />
         );
 
@@ -103,6 +115,14 @@ export default function AdminClient() {
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
             list={admin.attendanceStatusList}
+          />
+        );
+
+      case "users":
+        return (
+          <UserManagementBoard
+            users={admin.allUsers}
+            toggleVisibility={admin.toggleUserVisibility}
           />
         );
 
@@ -124,10 +144,9 @@ export default function AdminClient() {
                     )
                   }
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all
-                    ${
-                      goalTab === tab.key
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    ${goalTab === tab.key
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }
                   `}
                 >
@@ -155,10 +174,20 @@ export default function AdminClient() {
           />
         );
 
+      case "interaction":
+        return (
+          <InteractionManager
+            messages={admin.interactionMessages}
+            onDelete={admin.deleteInteraction}
+            onSaveAnswer={admin.saveAnswer}
+          />
+        );
+
       case "statistics":
         return (
           <AdminStatisticsSection
             growthStats={adminStats}
+            onDeleteUser={admin.deleteUser}
           />
         );
 
@@ -185,10 +214,9 @@ export default function AdminClient() {
               setActiveTab(tab.key)
             }
             className={`px-5 py-2 rounded-lg font-medium transition-all duration-200
-              ${
-                activeTab === tab.key
-                  ? "bg-black text-white shadow-md scale-105"
-                  : "bg-white text-gray-600 hover:bg-gray-200"
+              ${activeTab === tab.key
+                ? "bg-black text-white shadow-md scale-105"
+                : "bg-white text-gray-600 hover:bg-gray-200"
               }
             `}
           >

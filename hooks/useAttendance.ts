@@ -10,6 +10,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  updateDoc,
   query,
   where,
   orderBy,
@@ -280,7 +281,7 @@ export function useAttendance(user: any) {
       if (
         settingData.dailyGoalEnabled &&
         diff <
-          settingData.dailyGoalValue
+        settingData.dailyGoalValue
       ) {
         status = "pending";
       }
@@ -299,6 +300,13 @@ export function useAttendance(user: any) {
           serverTimestamp(),
       }
     );
+
+    /* 🔥 viewer 권한이면 user로 승급 */
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists() && userSnap.data().role === "viewer") {
+      await updateDoc(userRef, { role: "user" });
+    }
 
     setLoading(false);
     setModalOpen(false);

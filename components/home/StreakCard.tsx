@@ -1,14 +1,16 @@
-"use client";
-
 import { useEffect, useRef } from "react";
 import {
   motion,
   useMotionValue,
   useTransform,
   animate,
+  AnimatePresence,
+  useSpring,
 } from "framer-motion";
 import confetti from "canvas-confetti";
 import Card from "@/components/ui/Card";
+import { Flame, Trophy, Award } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
 
 const MotionCard = motion(Card);
 
@@ -17,143 +19,216 @@ export default function StreakCard({
 }: {
   streak: number;
 }) {
+  const { currentColors } = useTheme();
   const prevStreak = useRef<number>(streak);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // 마우스 추적 (3D 틸트 효과용)
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const rotateX = useTransform(mouseY, [-100, 100], [10, -10]);
+  const rotateY = useTransform(mouseX, [-100, 100], [-10, 10]);
+
+  const springConfig = { damping: 30, stiffness: 100 }; // 더 부드럽고 느린 틸트
+  const springX = useSpring(rotateX, springConfig);
+  const springY = useSpring(rotateY, springConfig);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    mouseX.set(e.clientX - centerX);
+    mouseY.set(e.clientY - centerY);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
 
   /* =========================
-     카운트업
+     카운트업 애니메이션
   ========================= */
-
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (latest) =>
-    Math.floor(latest)
-  );
+  const rounded = useTransform(count, (latest) => Math.floor(latest));
 
   useEffect(() => {
     const controls = animate(count, streak, {
-      duration: 0.8,
-      ease: "easeOut",
+      duration: 1.5,
+      ease: [0.34, 1.56, 0.64, 1], // 입체적인 스프링 느낌
     });
     return controls.stop;
   }, [streak]);
 
   /* =========================
-     streak 증가 시 confetti
+     연속 출석 축하 효과 (비례형)
   ========================= */
-
   useEffect(() => {
-    if (streak > prevStreak.current) {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+    if (streak > prevStreak.current && streak > 0) {
+      // 스트릭에 따라 지속 시간 조절 (최소 2초 ~ 최대 15초)
+      const duration = Math.min(Math.max(streak * 1000, 2000), 15000);
+      const animationEnd = Date.now() + duration;
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval: any = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        // 스트릭이 높을수록 폭죽 강도 증가
+        const intensity = streak >= 30 ? 1.5 : streak >= 7 ? 1.2 : 1.0;
+        const particleCount = (50 * intensity) * (timeLeft / duration);
+
+        confetti({
+          particleCount,
+          spread: streak >= 7 ? 100 : 60,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+          colors: streak >= 30 ? ['#FFD700', '#FFA500', '#FF4500'] : undefined
+        });
+        confetti({
+          particleCount,
+          spread: streak >= 7 ? 100 : 60,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+          colors: streak >= 30 ? ['#FFD700', '#FFA500', '#FF4500'] : undefined
+        });
+      }, 250);
     }
     prevStreak.current = streak;
   }, [streak]);
 
-  /* =========================
-     메시지
-  ========================= */
-
-  const getMessage = () => {
-    if (streak === 0) return "다시 시작하자 🔥";
-    if (streak < 3) return "좋은 출발";
-    if (streak < 7) return "리듬 타는 중";
-    if (streak < 14) return "집중력 최고";
-    if (streak < 30) return "이건 습관이다";
-    return "전설의 스터디러";
+  const getIntensity = () => {
+    if (streak === 0) return { color: "from-gray-400 to-gray-600", glow: "shadow-gray-200", msg: "다시 시작해봐요! 🔥" };
+    if (streak < 3) return { color: "from-orange-400 to-red-500", glow: "shadow-orange-200", msg: "좋은 출발이에요!" };
+    if (streak < 7) return { color: "from-red-500 to-pink-600", glow: "shadow-red-200", msg: "와우! 리듬을 탔어요!" };
+    if (streak < 30) return { color: "from-purple-500 to-indigo-600", glow: "shadow-purple-300", msg: "공부 괴물 등판! 👹" };
+    return { color: "from-yellow-400 via-orange-500 to-red-600", glow: "shadow-yellow-400", msg: "전설의 스터디 마스터! 👑" };
   };
 
-  const goldMode = streak >= 30;
-  const shakeMode = streak === 0;
+  const style = getIntensity();
 
   return (
     <MotionCard
-      animate={
-        shakeMode
-          ? { x: [0, -5, 5, -5, 5, 0] }
-          : { x: 0 }
-      }
-      transition={{ duration: 0.4 }}
-      className={`
-        relative
-        flex
-        flex-col
-        items-center
-        justify-center
-        p-10
-        h-full          /* 🔥 부모 높이 따라감 */
-        overflow-hidden
-        transition
-        ${
-          goldMode
-            ? "border-4 border-yellow-400 shadow-[0_0_25px_rgba(255,215,0,0.6)]"
-            : ""
-        }
-      `}
+      whileHover={{
+        scale: 1.02,
+        boxShadow: `0 0 50px ${currentColors.main}40`,
+        borderColor: `${currentColors.main}60`
+      }}
+      className="relative h-full overflow-hidden p-8 flex flex-col items-center justify-center border transition-all duration-700 shadow-2xl"
+      style={{
+        background: "rgba(255, 255, 255, 0.85)",
+        backdropFilter: "blur(20px)",
+        boxShadow: `0 10px 30px -5px rgba(0,0,0,0.1), 0 0 20px ${currentColors.main}15`,
+        borderColor: `${currentColors.main}30`
+      }}
     >
-      {/* 🔥 배경 펄스 */}
-      {streak > 0 && (
+      {/* 몽환적인 배경 오브 (Floating Orbs) - 훨씬 천천히 움직이게 수정 */}
+      {[1, 2, 3].map((i) => (
         <motion.div
-          className="absolute w-40 h-40 rounded-full bg-orange-200 opacity-20"
-          animate={{ scale: [1, 1.3, 1] }}
+          key={`orb-${i}`}
+          animate={{
+            x: [0, i * 20, -i * 20, 0],
+            y: [0, -i * 30, i * 10, 0],
+            scale: [1, 1.2, 0.8, 1],
+            opacity: [0.1, 0.2, 0.1],
+          }}
           transition={{
+            duration: 15 + i * 5,
             repeat: Infinity,
-            duration: 2,
+            ease: "easeInOut",
+          }}
+          className="absolute rounded-full blur-3xl -z-10"
+          style={{
+            width: 150 + i * 50,
+            height: 150 + i * 50,
+            backgroundColor: currentColors.main,
+            left: `${(i - 1) * 30}%`,
+            top: `${(i - 1) * 20}%`,
+            filter: "blur(60px)",
           }}
         />
-      )}
+      ))}
 
-      <div className="text-sm text-gray-500 mb-2 z-10">
-        🔥 My Streak
+      {/* 아이콘 섹션 */}
+      <div className="relative mb-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={streak >= 7 ? "legend" : "flame"}
+            initial={{ scale: 0.5, opacity: 0, rotate: -20 }}
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: 1,
+              rotate: [0, 5, -5, 0],
+              boxShadow: [`0 0 20px ${currentColors.main}40`, `0 0 40px ${currentColors.main}60`, `0 0 20px ${currentColors.main}40`]
+            }}
+            exit={{ scale: 1.5, opacity: 0 }}
+            className="p-5 rounded-3xl shadow-lg relative z-10"
+            style={{ backgroundColor: currentColors.main }}
+          >
+            {streak >= 30 ? (
+              <Trophy size={48} className="text-white" />
+            ) : streak >= 7 ? (
+              <Award size={48} className="text-white" />
+            ) : (
+              <Flame size={48} className="text-white" />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* 불꽃 애니메이션 파티클 (streak > 0 일때만) */}
+        {/* 불꽃 애니메이션 파티클 - 더욱 화려하게 */}
+        {streak > 0 && [1, 2, 3, 4, 5, 6, 7].map((i) => (
+          <motion.div
+            key={i}
+            animate={{
+              y: [-10, -80 - (i * 12)],
+              x: [(i - 4) * 5, (i - 4) * 25, (i - 4) * -15, (i - 4) * 10],
+              opacity: [0, 0.9, 0],
+              scale: [0.4, 1.4, 0.2],
+              rotate: [0, 45, -45, 0],
+              filter: ["blur(0px)", "blur(3px)", "blur(1px)"]
+            }}
+            transition={{
+              duration: 2.5 + (i % 3) * 0.5, // 입자 속도 하향
+              repeat: Infinity,
+              delay: i * 0.3,
+              ease: "easeOut"
+            }}
+            className="absolute top-0 left-1/2 -translate-x-1/2 text-orange-400 z-0 pointer-events-none drop-shadow-lg"
+          >
+            {i % 2 === 0 ? "🔥" : "✨"}
+          </motion.div>
+        ))}
       </div>
 
-      <motion.div
-        key={streak}
-        initial={{ scale: 0.7, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="text-5xl font-bold z-10 flex items-end gap-2"
-      >
-        <motion.span>{rounded}</motion.span>
-        <span className="text-xl mb-1">days</span>
-      </motion.div>
+      <div className="text-center z-10">
+        <div className="text-xs font-bold tracking-[0.2em] text-gray-400 uppercase mb-2">
+          Current Streak
+        </div>
 
-      {streak >= 7 && (
-        <>
-          <motion.div
-            className="absolute text-2xl left-4"
-            animate={{ y: [0, -20, 0] }}
-            transition={{
-              repeat: Infinity,
-              duration: 1.5,
-            }}
+        <div className="flex items-baseline justify-center gap-2">
+          <motion.span
+            className="text-7xl font-black bg-clip-text text-transparent"
+            style={{ backgroundImage: `linear-gradient(to bottom, ${currentColors.main}, ${currentColors.main}CC)` }}
           >
-            🔥
-          </motion.div>
+            {rounded}
+          </motion.span>
+          <span className="text-2xl font-bold" style={{ color: currentColors.main }}>DAYS</span>
+        </div>
 
-          <motion.div
-            className="absolute text-2xl right-4"
-            animate={{ y: [0, -25, 0] }}
-            transition={{
-              repeat: Infinity,
-              duration: 1.2,
-            }}
-          >
-            🔥
-          </motion.div>
-        </>
-      )}
+        <motion.div
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="mt-6 px-6 py-2 rounded-2xl bg-gray-50/50 border border-gray-100/50 backdrop-blur-sm shadow-sm relative group"
+        >
+          <span className="text-sm font-semibold text-gray-700">
+            {style.msg}
+          </span>
 
-      <motion.div
-        key={streak + "-msg"}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="text-sm text-gray-600 mt-4 text-center z-10"
-      >
-        {getMessage()}
-      </motion.div>
+        </motion.div>
+      </div>
+
     </MotionCard>
   );
 }

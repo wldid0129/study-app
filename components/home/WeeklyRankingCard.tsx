@@ -1,5 +1,8 @@
 "use client";
 
+import TierBadge from "@/components/ui/TierBadge";
+import { useTheme } from "@/context/ThemeContext";
+
 interface RankingItem {
   userId: string;
   total: number;
@@ -8,12 +11,15 @@ interface RankingItem {
 export default function WeeklyRankingCard({
   ranking,
   userMap,
+  userTotals,
   currentUserId,
 }: {
   ranking: RankingItem[];
   userMap: Record<string, string>;
+  userTotals: Record<string, number>;
   currentUserId?: string;
 }) {
+  const { currentColors } = useTheme();
   const top3 = ranking.slice(0, 3);
 
   const myRank =
@@ -44,17 +50,15 @@ export default function WeeklyRankingCard({
             <div
               key={item.userId}
               className={`flex justify-between items-center p-3 rounded-lg transition
-                ${
-                  index === 0
-                    ? "bg-yellow-50 border border-yellow-300 shadow-md"
-                    : ""
-                }
-                ${
-                  isMe
-                    ? "bg-blue-50 border border-blue-300"
-                    : ""
-                }
+                ${index === 0 ? "bg-yellow-50 border border-yellow-300 shadow-md" : ""}
+                ${isMe ? "border" : ""}
               `}
+              style={{
+                backgroundColor: index === 0 ? undefined : isMe ? currentColors.light : "transparent",
+                borderColor: index === 0 ? undefined : isMe ? currentColors.shades?.[20] : "transparent",
+                borderStyle: (index === 0 || isMe) ? "solid" : "none",
+                borderWidth: "1px"
+              }}
             >
               <div className="flex items-center gap-3">
                 <span className="text-lg font-bold">
@@ -63,11 +67,15 @@ export default function WeeklyRankingCard({
                   {index === 2 && "🥉"}
                 </span>
 
-                <span className="text-sm text-gray-700">
-                  {userMap[item.userId] ||
-                    item.userId}
-                  {isMe && " (나)"}
-                </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-700 font-medium">
+                      {userMap[item.userId] || item.userId}
+                    </span>
+                    <TierBadge count={userTotals[item.userId] || 0} />
+                  </div>
+                  {isMe && <span className="text-[10px] text-blue-500 font-bold">YOU</span>}
+                </div>
               </div>
 
               <div className="text-sm font-semibold">
@@ -81,12 +89,12 @@ export default function WeeklyRankingCard({
       {/* 🔥 내 순위 표시 (Top3 밖일 경우) */}
       {myRank > 3 && (
         <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-300 text-sm flex justify-between">
-          <span>
-            내 순위: {myRank}위 (
-            {userMap[currentUserId || ""] ||
-              currentUserId}
-            )
-          </span>
+          <div className="flex items-center gap-2">
+            <span>
+              내 순위: {myRank}위 ({userMap[currentUserId || ""] || currentUserId})
+            </span>
+            <TierBadge count={userTotals[currentUserId || ""] || 0} />
+          </div>
           <span>
             +
             {

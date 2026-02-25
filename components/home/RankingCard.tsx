@@ -1,4 +1,5 @@
 import Card from "@/components/ui/Card";
+import { useTheme } from "@/context/ThemeContext";
 
 interface RankingItem {
   name: string;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function RankingCard({ title, data }: Props) {
+  const { currentColors } = useTheme();
 
   return (
     <Card className="flex-1 p-10">
@@ -30,7 +32,10 @@ export default function RankingCard({ title, data }: Props) {
           key={index}
           className="flex justify-between mb-3 text-sm"
         >
-          <span className={index === 0 ? "font-bold text-indigo-600" : ""}>
+          <span
+            className={index === 0 ? "font-bold" : ""}
+            style={index === 0 ? { color: currentColors.main } : {}}
+          >
             {index + 1}. {item.name}
           </span>
           <span>{item.count}회</span>

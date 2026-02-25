@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "@/context/ThemeContext";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import MyHistoryCard from "@/components/home/MyHistoryCard";
@@ -52,23 +53,26 @@ export default function CalendarCard({
     1
   ).getDay();
 
-  const getColor = (percent: number) => {
-    if (percent === 0) return "bg-gray-100";
-    if (percent < 30) return "bg-indigo-200";
-    if (percent < 60) return "bg-indigo-400";
-    return "bg-indigo-600 text-white";
+  const { currentColors } = useTheme();
+
+  const getCellColor = (percent: number) => {
+    if (percent === 0) return { className: "bg-gray-100 text-gray-600" };
+    if (percent < 30) return { style: { backgroundColor: currentColors.shades?.[20] }, className: "text-gray-700" };
+    if (percent < 60) return { style: { backgroundColor: currentColors.shades?.[60] }, className: "text-white" };
+    return { style: { backgroundColor: currentColors.main }, className: "text-white" };
   };
 
   const monthKey = `${year}-${month}`;
 
   return (
-    <Card className="flex-1 p-10 min-h-[600px]">
+    <Card className="flex-1 p-6 md:p-10 min-h-[500px] md:min-h-[600px]">
 
       {/* ================= MONTH HEADER ================= */}
       {activeTab !== "history" && (
-        <div className="flex justify-center items-center gap-6 mb-8">
+        <div className="flex justify-center items-center gap-4 md:gap-6 mb-6 md:mb-8">
           <Button
             variant="secondary"
+            className="px-3 py-1 md:px-4 md:py-2"
             onClick={() => {
               const d = new Date(currentMonth);
               d.setMonth(d.getMonth() - 1);
@@ -78,12 +82,13 @@ export default function CalendarCard({
             ◀
           </Button>
 
-          <div className="text-lg font-semibold">
+          <div className="text-base md:text-lg font-semibold">
             {year}년 {month + 1}월
           </div>
 
           <Button
             variant="secondary"
+            className="px-3 py-1 md:px-4 md:py-2"
             onClick={() => {
               const d = new Date(currentMonth);
               d.setMonth(d.getMonth() + 1);
@@ -96,15 +101,16 @@ export default function CalendarCard({
       )}
 
       {/* ================= TABS ================= */}
-      <div className="flex justify-between mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 md:mb-8">
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 md:gap-3">
           <Button
             variant={
               activeTab === "total"
                 ? "primary"
                 : "secondary"
             }
+            className="text-xs md:text-sm px-3 py-1.5 md:px-4 md:py-2"
             onClick={() => setActiveTab("total")}
           >
             이번 달 참여현황
@@ -116,6 +122,7 @@ export default function CalendarCard({
                 ? "primary"
                 : "secondary"
             }
+            className="text-xs md:text-sm px-3 py-1.5 md:px-4 md:py-2"
             onClick={() =>
               setActiveTab("personal")
             }
@@ -129,6 +136,7 @@ export default function CalendarCard({
                 ? "primary"
                 : "secondary"
             }
+            className="text-xs md:text-sm px-3 py-1.5 md:px-4 md:py-2"
             onClick={() =>
               setActiveTab("history")
             }
@@ -138,7 +146,7 @@ export default function CalendarCard({
         </div>
 
         {activeTab === "personal" && (
-          <Button onClick={onOpenModal}>
+          <Button onClick={onOpenModal} className="w-full sm:w-auto text-sm">
             출석하기
           </Button>
         )}
@@ -158,6 +166,7 @@ export default function CalendarCard({
           }
           isReady={history.isReady}
           submissionCount={history.submissionCount}
+          weeklyBreakdown={history.weeklyBreakdown}
         />
       )}
 
@@ -170,7 +179,7 @@ export default function CalendarCard({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25 }}
-            className="grid grid-cols-7 gap-3"
+            className="grid grid-cols-7 gap-1.5 md:gap-3"
           >
             {[...Array(firstDay)].map(
               (_, i) => (
@@ -207,48 +216,58 @@ export default function CalendarCard({
                     whileHover={{
                       scale: 1.05,
                     }}
-                    className={`h-24 rounded-xl p-3 text-sm transition
-                    ${
-                      activeTab === "total"
-                        ? getColor(percent)
+                    className={`h-16 md:h-24 rounded-lg md:rounded-xl p-1.5 md:p-3 text-xs md:text-sm transition
+                    ${activeTab === "total"
+                        ? getCellColor(percent).className
                         : "bg-gray-100"
-                    }`}
+                      }`}
+                    style={activeTab === "total" ? getCellColor(percent).style : {}}
                   >
-                    <div className="text-xs font-medium">
+                    <div className="text-[10px] md:text-xs font-medium">
                       {day}
                     </div>
 
                     {activeTab ===
                       "total" && (
-                      <div className="text-xs mt-1 font-semibold">
-                        {percent}%
-                      </div>
-                    )}
+                        <div className="text-[10px] md:text-xs mt-0.5 md:mt-1 font-semibold">
+                          {percent}%
+                        </div>
+                      )}
 
                     {activeTab ===
                       "personal" && (
-                      <div className="mt-3 text-xs">
-                        {status ===
-                          "approved" && (
-                          <span className="px-2 py-1 rounded-full bg-green-100 text-green-700 font-medium">
-                            출석 완료
-                          </span>
-                        )}
+                        <div className="mt-1 md:mt-3 text-[10px] md:text-xs">
+                          {status ===
+                            "approved" && (
+                              <span
+                                className="px-1.5 py-0.5 md:px-2 md:py-1 rounded-full font-bold truncate block text-center md:inline shadow-sm"
+                                style={{ backgroundColor: currentColors.main, color: '#fff' }}
+                              >
+                                {/* 모바일에서는 텍스트 줄임 */}
+                                <span className="hidden md:inline">출석 완료</span>
+                                <span className="md:hidden">완료</span>
+                              </span>
+                            )}
 
-                        {status ===
-                          "pending" && (
-                          <span className="px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 font-medium">
-                            승인 대기
-                          </span>
-                        )}
+                          {status ===
+                            "pending" && (
+                              <span
+                                className="px-1.5 py-0.5 md:px-2 md:py-1 rounded-full font-bold truncate block text-center md:inline shadow-sm"
+                                style={{ backgroundColor: currentColors.shades?.[40], color: '#fff' }}
+                              >
+                                <span className="hidden md:inline">승인 대기</span>
+                                <span className="md:hidden">대기</span>
+                              </span>
+                            )}
 
-                        {!status && (
-                          <span className="px-2 py-1 rounded-full bg-gray-200 text-gray-600">
-                            미출석
-                          </span>
-                        )}
-                      </div>
-                    )}
+                          {!status && (
+                            <span className="px-1.5 py-0.5 md:px-2 md:py-1 rounded-full bg-gray-200 text-gray-600 block text-center md:inline">
+                              <span className="hidden md:inline">미출석</span>
+                              <span className="md:hidden">X</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
                   </motion.div>
                 );
               }

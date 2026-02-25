@@ -8,9 +8,14 @@ import {
   updateDoc,
   doc,
   getDocs,
+  orderBy,
+  limit,
   addDoc,
   serverTimestamp,
+  deleteDoc,
+  writeBatch,
 } from "firebase/firestore";
+import { useInteraction } from "@/hooks/useInteraction";
 
 /* ===============================
    🔥 STREAK 계산 함수 (선택 날짜 기준)
@@ -35,8 +40,16 @@ function calculateStreak(dates: string[], baseDate: string) {
 
 export function useAdmin(selectedDate: string) {
   const [pendingList, setPendingList] = useState<any[]>([]);
-  const [noticeId, setNoticeId] = useState<string | null>(null);
+  const [noticeList, setNoticeList] = useState<any[]>([]);
+  const [interactionMessages, setInteractionMessages] = useState<any[]>([]);
+  const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  const { saveAnswer } = useInteraction(null, true);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const [attendanceStatusList, setAttendanceStatusList] = useState<any[]>([]);
   const [ranking, setRanking] = useState<any[]>([]);
   const [distribution, setDistribution] = useState<any>({});
@@ -63,33 +76,112 @@ export function useAdmin(selectedDate: string) {
   }, []);
 
   /* ======================
-     NOTICE (실시간)
+     NOTICE (실시간 - 전체 목록)
   ====================== */
-
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "notices"), (snapshot) => {
-      if (!snapshot.empty) {
-        const d = snapshot.docs[0];
-        setNoticeId(d.id);
-        setNoticeContent(d.data().content);
-      }
+    const q = query(collection(db, "notices"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setNoticeList(list);
     });
-
     return () => unsub();
   }, []);
 
   const saveNotice = async () => {
-    if (!noticeId) {
+    if (!noticeTitle.trim() || !noticeContent.trim()) return;
+    setSaveLoading(true);
+    try {
       await addDoc(collection(db, "notices"), {
+        title: noticeTitle,
         content: noticeContent,
         createdAt: serverTimestamp(),
       });
-    } else {
-      await updateDoc(doc(db, "notices", noticeId), {
-        content: noticeContent,
-        updatedAt: serverTimestamp(),
-      });
+      setNoticeTitle("");
+      setNoticeContent("");
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (e) {
+      console.error(e);
+      alert("공지 저장 실패");
+    } finally {
+      setSaveLoading(false);
     }
+  };
+
+  const deleteNotice = async (id: string) => {
+    if (!confirm("이 공지사항을 삭제하시겠습니까?")) return;
+    try {
+      await deleteDoc(doc(db, "notices", id));
+    } catch (e) {
+      console.error(e);
+      alert("삭제 실패");
+    }
+  };
+
+  /* ======================
+     INTERACTIONS (실시간 - 전체 목록)
+  ====================== */
+  useEffect(() => {
+    const q = query(collection(db, "interactions"), orderBy("createdAt", "desc"));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      setInteractionMessages(list);
+    });
+    return () => unsub();
+  }, []);
+
+  const deleteInteraction = async (id: string) => {
+    if (!confirm("이 메시지를 삭제하시겠습니까?")) return;
+    try {
+      await deleteDoc(doc(db, "interactions", id));
+    } catch (e) {
+      console.error(e);
+      alert("삭제 실패");
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (!confirm("정말로 이 사용자를 영구 삭제하시겠습니까? 관련 출석 데이터도 모두 삭제됩니다.")) return;
+    try {
+      // 1. 유저 문서 삭제
+      await deleteDoc(doc(db, "users", userId));
+
+      // 2. 관련 출석 데이터 삭제
+      const q = query(collection(db, "attendances"), where("userId", "==", userId));
+      const snap = await getDocs(q);
+
+      const batch = writeBatch(db);
+      snap.forEach((d) => {
+        batch.delete(d.ref);
+      });
+      await batch.commit();
+
+      alert("사용자 및 관련 데이터가 삭제되었습니다.");
+    } catch (e) {
+      console.error(e);
+      alert("사용자 삭제 실패");
+    }
+  };
+
+  /* ======================
+     🔥 전체 유저 관리 (실시간)
+  ====================== */
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "users"), (snapshot) => {
+      const users = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
+      setAllUsers(users);
+    });
+    return () => unsub();
+  }, []);
+
+  const toggleUserVisibility = async (userId: string, isHidden: boolean) => {
+    await updateDoc(doc(db, "users", userId), {
+      isHidden,
+    });
   };
 
   /* ======================
@@ -100,7 +192,9 @@ export function useAdmin(selectedDate: string) {
     const unsub = onSnapshot(
       collection(db, "attendances"),
       async (attendSnap) => {
-        const usersSnap = await getDocs(collection(db, "users"));
+        const usersSnap = await getDocs(
+          query(collection(db, "users"), where("role", "==", "user"))
+        );
 
         const approvedMap: Record<string, string[]> = {};
         const statusMap: Record<string, string> = {};
@@ -125,6 +219,8 @@ export function useAdmin(selectedDate: string) {
         usersSnap.forEach((userDoc) => {
           const userId = userDoc.id;
           const userData = userDoc.data();
+
+          if (userData.isHidden) return; // 숨김 유저 제외
 
           const streak = calculateStreak(
             approvedMap[userId] || [],
@@ -163,7 +259,9 @@ export function useAdmin(selectedDate: string) {
   }, []);
 
   const loadStatistics = async () => {
-    const usersSnap = await getDocs(collection(db, "users"));
+    const usersSnap = await getDocs(
+      query(collection(db, "users"), where("role", "==", "user"))
+    );
     const attendSnap = await getDocs(
       query(
         collection(db, "attendances"),
@@ -186,6 +284,8 @@ export function useAdmin(selectedDate: string) {
     usersSnap.forEach((userDoc) => {
       const userId = userDoc.id;
       const userData = userDoc.data();
+
+      if (userData.isHidden) return; // 숨김 유저 제외
 
       rankingList.push({
         userId,
@@ -237,12 +337,24 @@ export function useAdmin(selectedDate: string) {
   return {
     pendingList,
     attendanceStatusList,
+    noticeTitle,
+    setNoticeTitle,
     noticeContent,
     setNoticeContent,
+    noticeList,
     saveNotice,
+    deleteNotice,
+    saveLoading,
+    saveSuccess,
     approve,
     reject,
     ranking,
     distribution,
+    allUsers,
+    toggleUserVisibility,
+    deleteUser,
+    interactionMessages,
+    deleteInteraction,
+    saveAnswer,
   };
 }
