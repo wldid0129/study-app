@@ -1,3 +1,5 @@
+"use client";
+
 import TodayRateCard from "./TodayRateCard";
 import RankingCard from "./RankingCard";
 
@@ -18,7 +20,7 @@ export default function StatisticsSection({
   monthlyTop,
 }: Props) {
   return (
-    <div className="flex gap-10 mt-16">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 mt-10 md:mt-16">
 
       <TodayRateCard todayRate={todayRate} />
 

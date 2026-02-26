@@ -27,12 +27,26 @@ import { useGoals } from "@/hooks/useGoals";
 import { useWeeklyRanking } from "@/hooks/useWeeklyRanking";
 import WeeklyRankingCard from "@/components/home/WeeklyRankingCard";
 
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } }
+};
+
 export default function HomePage() {
   const authState = useAuth();
   const attendance = useAttendance(authState.user);
   const noticeState = useNotice();
   const usersState = useUsers();
-
   const ranking = useWeeklyRanking();
 
   const {
@@ -44,9 +58,6 @@ export default function HomePage() {
     isWeeklyActive,
   } = useGoals(authState.user?.uid);
 
-  /* =========================
-     USER COUNT (기존 유지)
-  ========================= */
   useEffect(() => {
     const fetchUsers = async () => {
       await getDocs(collection(db, "users"));
@@ -54,37 +65,34 @@ export default function HomePage() {
     fetchUsers();
   }, []);
 
-  /* =========================
-     STATISTICS
-  ========================= */
   const statistics = useStatistics(
     usersState.userCount,
     usersState.userMap
   );
 
   return (
-    <div className="bg-[#f4f6f9] min-h-screen pb-20">
+    <div className="bg-mesh min-h-screen pb-24 selection:bg-brand/10 selection:text-brand">
       <Header
         user={authState.user}
         onLogout={authState.logout}
       />
 
-      <div className="max-w-7xl mx-auto px-4 py-8 md:p-8 lg:p-12 space-y-12">
-
-        {/* 1. DASHBOARD OVERVIEW (메인 대시보드 - 단일 뷰) */}
-        <section className="space-y-8">
+      <motion.main 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="max-w-7xl mx-auto px-6 py-8 md:p-10 lg:p-12 space-y-12"
+      >
+        {/* 1. DASHBOARD OVERVIEW */}
+        <section className="space-y-10">
           {/* 🔥 Notice */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div variants={item}>
             <NoticeCard />
           </motion.div>
 
           {/* 🔥 목표 영역 */}
-          <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-stretch">
-            <div className="flex-1">
+          <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+            <div>
               {!isWeeklyActive ? (
                 <GoalMaintenanceCard title="주간 목표 점검 중" />
               ) : (
@@ -95,7 +103,7 @@ export default function HomePage() {
               )}
             </div>
 
-            <div className="flex-1">
+            <div>
               {!isDailyActive ? (
                 <GoalMaintenanceCard title="일일 목표 점검 중" />
               ) : (
@@ -105,11 +113,11 @@ export default function HomePage() {
                 />
               )}
             </div>
-          </div>
+          </motion.div>
 
           {/* 🔥 Streak + Calendar */}
-          <div className="flex flex-col lg:flex-row gap-6 md:gap-10 items-stretch">
-            <div className="flex-1 min-w-[300px]">
+          <motion.div variants={item} className="flex flex-col lg:flex-row gap-6 md:gap-10 items-stretch">
+            <div className="flex-1 lg:max-w-sm">
               <StreakCard streak={attendance.streak} />
             </div>
 
@@ -121,6 +129,8 @@ export default function HomePage() {
                 setActiveTab={attendance.setActiveTab}
                 attendanceMap={attendance.attendanceMap}
                 totalMap={attendance.totalMap}
+                participantsMap={attendance.participantsMap}
+                userMap={usersState.userMap}
                 userCount={usersState.userCount}
                 userId={authState.user?.uid}
                 onOpenModal={() =>
@@ -128,27 +138,30 @@ export default function HomePage() {
                 }
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* 🔥 Weekly Ranking */}
-          <WeeklyRankingCard
-            ranking={ranking}
-            userMap={usersState.userMap}
-            userTotals={usersState.userTotals}
-            currentUserId={authState.user?.uid}
-          />
+          <motion.div variants={item}>
+            <WeeklyRankingCard
+              ranking={ranking}
+              userMap={usersState.userMap}
+              userTotals={usersState.userTotals}
+              currentUserId={authState.user?.uid}
+            />
+          </motion.div>
 
-          {/* 🔥 Statistics (통계 섹션까지만 노출) */}
-          <StatisticsSection
-            todayRate={statistics.todayRate}
-            weeklyTop={statistics.weeklyTop}
-            monthlyTop={statistics.monthlyTop}
-          />
+          {/* 🔥 Statistics */}
+          <motion.div variants={item}>
+            <StatisticsSection
+              todayRate={statistics.todayRate}
+              weeklyTop={statistics.weeklyTop}
+              monthlyTop={statistics.monthlyTop}
+            />
+          </motion.div>
         </section>
 
-        {/* 🔥 소통 게시판 (Floating FAB) */}
         <InteractionBoard />
-      </div>
+      </motion.main>
 
       {/* 🔥 UploadModal */}
       <UploadModal

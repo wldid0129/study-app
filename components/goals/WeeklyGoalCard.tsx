@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import { DisplayGoal, Goal } from "@/types/goal";
 import { motion } from "framer-motion";
 
@@ -13,7 +14,7 @@ export default function WeeklyGoalCard({
   if (!goal) return null;
 
   return (
-    <div className="p-8 rounded-2xl shadow bg-white border border-gray-200 relative">
+    <Card className="p-8 border border-gray-200 relative">
 
       <div className="text-sm text-gray-500">
         🎯 이번 주 목표
@@ -52,7 +53,7 @@ export default function WeeklyGoalCard({
           SUCCESS
         </motion.div>
       )}
-    </div>
+    </Card>
   );
 }
 

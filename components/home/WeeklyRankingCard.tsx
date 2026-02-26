@@ -1,5 +1,6 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import TierBadge from "@/components/ui/TierBadge";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -28,7 +29,7 @@ export default function WeeklyRankingCard({
     ) + 1;
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow border border-gray-200">
+    <Card className="p-8 border border-gray-200">
 
       <div className="text-sm text-gray-500 mb-4">
         🏆 이번 주 누적 랭킹
@@ -106,6 +107,6 @@ export default function WeeklyRankingCard({
           </span>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
