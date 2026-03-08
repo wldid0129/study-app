@@ -13,6 +13,7 @@ import CalendarCard from "@/components/home/CalendarCard";
 import UploadModal from "@/components/home/UploadModal";
 import StatisticsSection from "@/components/home/StatisticsSection";
 import InteractionBoard from "@/components/home/InteractionBoard";
+import QuickLinksHub from "@/components/home/QuickLinksHub";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useAttendance } from "@/hooks/useAttendance";
@@ -78,18 +79,33 @@ export default function HomePage() {
         onLogout={authState.logout}
       />
 
-      {/* spacer for fixed Header */}
-      <div className="h-24 md:h-28" />
+      {/* spacer for fixed Header (Mobile: 200px, Desktop: 112px) */}
+      <div className="h-[200px] md:h-28" />
 
-      <motion.main 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="max-w-7xl mx-auto px-6 py-8 md:p-10 lg:p-12 space-y-12"
-      >
-        {/* 1. DASHBOARD OVERVIEW */}
-        <section className="space-y-10">
-          {/* 🔥 Attendance (light) */}
+      <div className="relative">
+        {/* ====== 좌측 사이드바: AI 뉴스 & 트렌드 ====== */}
+        <div className="hidden min-[1700px]:block fixed left-10 top-1/2 -translate-y-1/2 z-20">
+          <QuickLinksHub side="left" />
+        </div>
+
+        {/* ====== 우측 사이드바: 공모전 & 채용 ====== */}
+        <div className="hidden min-[1700px]:block fixed right-10 top-1/2 -translate-y-1/2 z-20">
+          <QuickLinksHub side="right" />
+        </div>
+
+        <motion.main
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="max-w-7xl mx-auto px-6 py-6 md:p-10 lg:p-12 space-y-10"
+        >
+          {/* ====== ROW 0: 모바일용 퀵 링크 (AI 뉴스 & Career Hub) ====== */}
+          <motion.div variants={item} className="min-[1700px]:hidden space-y-8 pb-4 border-b border-gray-50 mb-4">
+            <QuickLinksHub side="left" mobile />
+            <QuickLinksHub side="right" mobile />
+          </motion.div>
+
+          {/* ====== ROW 1: 출석 인증 배너 (전체 폭) ====== */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -102,12 +118,17 @@ export default function HomePage() {
             />
           </motion.div>
 
-          {/* 🔥 Notice */}
-          <motion.div variants={item}>
-            <NoticeCard />
+          {/* ====== ROW 2: 스트릭 + 공지사항 (사이드 바이 사이드) ====== */}
+          <motion.div variants={item} className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-stretch">
+            <div className="flex-shrink-0 lg:w-[280px]">
+              <StreakCard streak={attendance.streak} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <NoticeCard />
+            </div>
           </motion.div>
 
-          {/* 🔥 목표 영역 */}
+          {/* ====== ROW 3: 주간 + 일일 목표 (2등분) ====== */}
           <motion.div variants={item} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
             <div>
               {!isWeeklyActive ? (
@@ -119,7 +140,6 @@ export default function HomePage() {
                 />
               )}
             </div>
-
             <div>
               {!isDailyActive ? (
                 <GoalMaintenanceCard title="일일 목표 점검 중" />
@@ -132,32 +152,26 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* 🔥 Streak + Calendar */}
-          <motion.div variants={item} className="flex flex-col lg:flex-row gap-6 md:gap-10 items-stretch">
-            <div className="flex-1 lg:max-w-sm">
-              <StreakCard streak={attendance.streak} />
-            </div>
-
-            <div className="flex-[2]">
-              <CalendarCard
-                currentMonth={attendance.currentMonth}
-                setCurrentMonth={attendance.setCurrentMonth}
-                activeTab={attendance.activeTab}
-                setActiveTab={attendance.setActiveTab}
-                attendanceMap={attendance.attendanceMap}
-                totalMap={attendance.totalMap}
-                participantsMap={attendance.participantsMap}
-                userMap={usersState.userMap}
-                userCount={usersState.userCount}
-                userId={authState.user?.uid}
-                onOpenModal={() =>
-                  attendance.setModalOpen(true)
-                }
-              />
-            </div>
+          {/* ====== ROW 4: 출석 달력 (전체 폭) ====== */}
+          <motion.div variants={item}>
+            <CalendarCard
+              currentMonth={attendance.currentMonth}
+              setCurrentMonth={attendance.setCurrentMonth}
+              activeTab={attendance.activeTab}
+              setActiveTab={attendance.setActiveTab}
+              attendanceMap={attendance.attendanceMap}
+              totalMap={attendance.totalMap}
+              participantsMap={attendance.participantsMap}
+              userMap={usersState.userMap}
+              userCount={usersState.userCount}
+              userId={authState.user?.uid}
+              onOpenModal={() =>
+                attendance.setModalOpen(true)
+              }
+            />
           </motion.div>
 
-          {/* 🔥 Weekly Ranking */}
+          {/* ====== ROW 5: 주간 랭킹 (전체 폭) ====== */}
           <motion.div variants={item}>
             <WeeklyRankingCard
               ranking={ranking}
@@ -167,7 +181,7 @@ export default function HomePage() {
             />
           </motion.div>
 
-          {/* 🔥 Statistics */}
+          {/* ====== ROW 6: 통계 (전체 폭, 내부 3등분) ====== */}
           <motion.div variants={item}>
             <StatisticsSection
               todayRate={statistics.todayRate}
@@ -175,10 +189,12 @@ export default function HomePage() {
               monthlyTop={statistics.monthlyTop}
             />
           </motion.div>
-        </section>
 
-        <InteractionBoard />
-      </motion.main>
+          {/* ====== ROW 6: 소통 게시판 (전체 폭) ====== */}
+          <InteractionBoard />
+        </motion.main>
+      </div>
+
 
       {/* 🔥 UploadModal */}
       <UploadModal

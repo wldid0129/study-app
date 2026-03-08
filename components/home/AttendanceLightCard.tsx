@@ -44,7 +44,16 @@ export default function AttendanceLightCard({
           </div>
         </div>
 
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-4">
+          <a
+            href="https://programmers.co.kr/learn/challenges"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden md:flex flex-col items-center justify-center gap-1.5 px-4 h-20 rounded-2xl bg-gray-50 hover:bg-gray-100 text-gray-400 transition-all border border-dashed border-gray-200 group"
+          >
+            <span className="text-[10px] font-black uppercase tracking-tighter">Go Solve</span>
+            <span className="text-xs font-bold text-gray-500 group-hover:text-brand transition-colors">프로그래머스 ↗</span>
+          </a>
           <Button
             onClick={onOpenModal}
             className="flex items-center justify-center rounded-2xl shadow-md"

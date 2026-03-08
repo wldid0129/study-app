@@ -32,7 +32,7 @@ export default function NoticeCard() {
   };
 
   return (
-    <Card className="p-6 md:p-8 bg-white border border-gray-100 shadow-xl relative overflow-hidden group">
+    <Card className="p-6 md:p-8 bg-white border border-gray-100 shadow-xl relative overflow-hidden group h-full">
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

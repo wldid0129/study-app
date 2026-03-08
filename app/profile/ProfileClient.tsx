@@ -16,6 +16,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useMyHistory } from "@/hooks/useMyHistory";
 import StudyReports from "@/components/profile/StudyReports";
 import ProfileQnATab from "@/components/profile/ProfileQnATab";
+import QuickLinksHub from "@/components/home/QuickLinksHub";
 
 export default function ProfileClient() {
     const { user, logout } = useAuth();
@@ -47,10 +48,16 @@ export default function ProfileClient() {
         <div className="bg-[#f4f6f9] min-h-screen pb-20">
             <Header user={user} onLogout={logout} />
 
-            {/* spacer for fixed Header */}
-            <div className="h-24 md:h-28" />
+            {/* spacer for fixed Header (Mobile: 200px, Desktop: 112px) */}
+            <div className="h-[200px] md:h-28" />
 
-            <main className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+            <main className="max-w-4xl mx-auto px-4 py-4 md:py-10">
+                {/* ====== 모바일용 퀵 링크 (AI 뉴스 & Career Hub) ====== */}
+                <div className="min-[1700px]:hidden space-y-8 mb-8 pb-8 border-b border-gray-100">
+                    <QuickLinksHub side="left" mobile />
+                    <QuickLinksHub side="right" mobile />
+                </div>
+
                 <Link
                     href="/home"
                     className="text-sm text-brand font-bold mb-8 flex items-center gap-2 hover:translate-x-[-4px] transition-transform w-fit"
@@ -59,7 +66,7 @@ export default function ProfileClient() {
                     <span>대시보드로 돌아가기</span>
                 </Link>
 
-                {/* 상단 프로필 카드 (고정) */}
+                {/* 상단 프로필 카드 */}
                 <motion.div
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -136,8 +143,8 @@ export default function ProfileClient() {
                             key={tab.id}
                             onClick={() => handleTabChange(tab.id)}
                             className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id
-                                    ? 'shadow-lg text-white'
-                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-0'
+                                ? 'shadow-lg text-white'
+                                : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                 }`}
                             style={activeTab === tab.id ? { backgroundColor: currentColors.main } : {}}
                         >
@@ -160,8 +167,8 @@ export default function ProfileClient() {
                                 className="space-y-6"
                             >
                                 <div className="mb-4 text-center md:text-left">
-                                    <h2 className="text-xl font-bold text-gray-800 mb-1">활동 정원</h2>
-                                    <p className="text-sm text-gray-400 font-medium tracking-tight">나의 학습 기록이 꽃으로 피어납니다.</p>
+                                    <h2 className="text-xl font-bold text-gray-800 mb-1">코테 공부방</h2>
+                                    <p className="text-sm text-gray-400 font-medium tracking-tight">나의 코딩테스트 학습 기록이 꽃으로 피어납니다.</p>
                                 </div>
                                 <ActivityHeatmap data={heatmapData} limitToCurrentMonth={true} />
                             </motion.div>
@@ -192,6 +199,8 @@ export default function ProfileClient() {
                         )}
                     </AnimatePresence>
                 </div>
+
+                {/* ====== PC용 추가 여백 ====== */}
             </main>
         </div>
     );

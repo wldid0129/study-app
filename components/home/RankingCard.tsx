@@ -25,8 +25,8 @@ export default function RankingCard({ title, data }: Props) {
   const { currentColors } = useTheme();
 
   return (
-    <Card className="flex-1 overflow-hidden p-6 md:p-8">
-      <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-8">
+    <Card className="flex-1 overflow-hidden p-6">
+      <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">
         {title}
       </div>
 
@@ -43,18 +43,16 @@ export default function RankingCard({ title, data }: Props) {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1, type: "spring", stiffness: 300 }}
-              className={`flex items-center justify-between p-3 rounded-2xl transition-all ${
-                index === 0 
-                ? "bg-brand/5 border border-brand/10 shadow-sm" 
-                : "hover:bg-gray-50/50"
-              }`}
+              className={`flex items-center justify-between p-3 rounded-2xl transition-all ${index === 0
+                  ? "bg-brand/5 border border-brand/10 shadow-sm"
+                  : "hover:bg-gray-50/50"
+                }`}
             >
               <div className="flex items-center gap-4">
-                <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-black ${
-                  index === 0 ? "bg-brand text-white shadow-lg shadow-brand/20" : 
-                  index < 3 ? "bg-white border border-gray-100 text-gray-600" : 
-                  "text-gray-400"
-                }`}>
+                <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-black ${index === 0 ? "bg-brand text-white shadow-lg shadow-brand/20" :
+                    index < 3 ? "bg-white border border-gray-100 text-gray-600" :
+                      "text-gray-400"
+                  }`}>
                   {getRankIcon(index)}
                 </span>
                 <span className={`text-sm font-bold ${index === 0 ? "text-gray-800" : "text-gray-600"}`}>

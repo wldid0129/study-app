@@ -39,10 +39,10 @@ export default function Header({
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="relative group">
-            <Link
-              href="/profile"
-              className="flex items-center gap-2 cursor-pointer"
+          <div className="relative" ref={dropdownRef}>
+            <div
+              className="flex items-center gap-2 cursor-pointer group"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               {user?.photoURL && (
                 <img
@@ -54,20 +54,32 @@ export default function Header({
               <span className="text-sm font-bold text-gray-600 group-hover:text-brand transition">
                 내 프로필
               </span>
-            </Link>
+            </div>
 
-            {/* 테마 변경 링크 (호버 시 나타남) */}
-            <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <div className="bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden min-w-[140px]">
+            {/* 드롭다운 메뉴 (호버 및 클릭 토글 대응) */}
+            <div className={`absolute top-full left-0 pt-2 transition-all duration-200 z-50 ${isDropdownOpen ? 'opacity-100 visible' : 'opacity-0 invisible md:group-hover:opacity-100 md:group-hover:visible'}`}>
+              <div className="bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden min-w-[160px]">
+                <Link
+                  href="/profile"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="px-4 py-3 text-[12px] font-bold text-gray-500 hover:text-brand hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                >
+                  💻 코테 공부방
+                </Link>
+                <Link
+                  href="/study-room"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="px-4 py-3 text-[12px] font-bold text-gray-500 hover:text-brand hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                >
+                  📚 개인 공부방
+                </Link>
                 <Link
                   href="/theme"
-                  className="px-4 py-2.5 text-[11px] font-bold text-gray-500 hover:text-brand hover:bg-gray-50 flex items-center gap-2 transition-colors border-b border-gray-50"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="px-4 py-3 text-[12px] font-bold text-gray-500 hover:text-brand hover:bg-gray-50 flex items-center gap-2 transition-colors"
                 >
                   🎨 테마 변경하기
                 </Link>
-                <div className="px-4 py-2.5 text-[11px] font-bold text-gray-300 flex items-center gap-2 cursor-default bg-gray-50/30">
-                  ✨ 새 기능 준비중
-                </div>
               </div>
             </div>
           </div>
