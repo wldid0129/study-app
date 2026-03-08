@@ -11,7 +11,7 @@ export default function TodayRateCard({ todayRate }: Props) {
   const progress = (todayRate / 100) * circumference;
 
   return (
-    <Card className="flex-1 relative overflow-hidden group">
+    <Card className="flex-1 relative overflow-hidden group p-6 md:p-8">
       {/* Background Decor */}
       <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand/5 rounded-full blur-3xl group-hover:bg-brand/10 transition-colors duration-500" />
       

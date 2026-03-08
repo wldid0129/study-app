@@ -10,6 +10,8 @@ import { db } from "@/lib/firebase";
 interface RankingItem {
   userId: string;
   total: number;
+  // baseline before current week (used internally but not shown)
+  baseline?: number;
 }
 
 export function useWeeklyRanking() {
@@ -108,7 +110,7 @@ export function useWeeklyRanking() {
           );
 
           if (!inWeek.length) {
-            return { userId, total: 0 };
+            return { userId, total: 0, baseline: beforeWeek?.total ?? 0 };
           }
 
           const weekLast = inWeek[inWeek.length - 1];
@@ -117,9 +119,11 @@ export function useWeeklyRanking() {
           return {
             userId,
             total: Math.max(0, weekLast.total - baseline),
+            baseline,
           };
         })
-        .filter((item) => item.total > 0)
+        // remove users whose baseline exceeds threshold so they don't appear in ranking
+        .filter((item) => item.total > 0 && item.total <= 40)
         .sort((a, b) => b.total - a.total);
 
       setRanking(sorted);

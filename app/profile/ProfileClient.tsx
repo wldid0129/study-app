@@ -47,6 +47,9 @@ export default function ProfileClient() {
         <div className="bg-[#f4f6f9] min-h-screen pb-20">
             <Header user={user} onLogout={logout} />
 
+            {/* spacer for fixed Header */}
+            <div className="h-24 md:h-28" />
+
             <main className="max-w-4xl mx-auto px-4 py-6 md:py-10">
                 <Link
                     href="/home"

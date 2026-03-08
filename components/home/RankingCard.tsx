@@ -25,7 +25,7 @@ export default function RankingCard({ title, data }: Props) {
   const { currentColors } = useTheme();
 
   return (
-    <Card className="flex-1 overflow-hidden">
+    <Card className="flex-1 overflow-hidden p-6 md:p-8">
       <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-8">
         {title}
       </div>
