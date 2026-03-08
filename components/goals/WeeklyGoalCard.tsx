@@ -1,8 +1,8 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import { DisplayGoal, Goal } from "@/types/goal";
 import { motion } from "framer-motion";
-import Card from "@/components/ui/Card";
 
 export default function WeeklyGoalCard({
   goal,

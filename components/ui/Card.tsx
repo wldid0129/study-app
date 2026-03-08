@@ -1,13 +1,17 @@
-interface CardProps {
+import { motion, HTMLMotionProps } from "framer-motion";
+
+interface CardProps extends HTMLMotionProps<"div"> {
   children: React.ReactNode;
   className?: string;
   noHover?: boolean;
 }
 
-export default function Card({ children, className, noHover }: CardProps) {
-  const hoverClass = noHover ? "" : "transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg";
+export default function Card({ children, className, noHover, ...props }: CardProps) {
+  const hoverClass = noHover ? "" : "";
   return (
-    <div
+    <motion.div
+      whileHover={{ y: -4, boxShadow: "0 12px 40px 0 rgba(31, 38, 135, 0.12)" }}
+      transition={{ type: "spring", stiffness: 400, damping: 17 }}
       className={`
         bg-white
         rounded-2xl
@@ -16,8 +20,9 @@ export default function Card({ children, className, noHover }: CardProps) {
         ${hoverClass}
         ${className || ""}
       `}
+      {...props}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }

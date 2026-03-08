@@ -22,8 +22,9 @@ interface CalendarCardProps {
 
   attendanceMap: Record<string, string>;
   totalMap: Record<string, number>;
+  participantsMap: Record<string, string[]>;
+  userMap: Record<string, string>;
   userCount: number;
-  userMap?: Record<string, string>;
 
   userId?: string;
 
@@ -37,8 +38,9 @@ export default function CalendarCard({
   setActiveTab,
   attendanceMap,
   totalMap,
-  userCount,
+  participantsMap,
   userMap,
+  userCount,
   userId,
   onOpenModal,
 }: CalendarCardProps) {
@@ -47,17 +49,9 @@ export default function CalendarCard({
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
-  const daysInMonth = new Date(
-    year,
-    month + 1,
-    0
-  ).getDate();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const firstDay = new Date(
-    year,
-    month,
-    1
-  ).getDay();
+  const firstDay = new Date(year, month, 1).getDay();
 
   const { currentColors } = useTheme();
 
@@ -65,8 +59,6 @@ export default function CalendarCard({
   const [popupInfo, setPopupInfo] = useState<null | { left: number; top: number; participants: string[]; dateKey: string }>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const hoverTimeout = useRef<number | null>(null);
-
-  // click-fixed popup removed - no document click listener needed
 
   const getCellColor = (percent: number) => {
     if (percent === 0) return { className: "bg-gray-100 text-gray-600" };
@@ -95,18 +87,18 @@ export default function CalendarCard({
           <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${currentColors.shades?.[10] || '#f0f0f0'}` }}>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: currentColors.shades?.[40] || '#e6fff0', color: currentColors.main }}>📅</div>
-              <div className="text-sm font-semibold" style={{ color: currentColors.textPrimary || undefined }}>{popupInfo.dateKey} 참여자</div>
+              <div className="text-sm font-semibold" style={{ color: (currentColors as any).textPrimary || undefined }}>{popupInfo.dateKey} 참여자</div>
             </div>
             <button onClick={() => setPopupInfo(null)} className="text-gray-400 hover:text-gray-600">✕</button>
           </div>
           <div className="p-3 max-h-48 overflow-auto">
             {popupInfo.participants.length === 0 ? (<div className="text-sm text-gray-500">참여자가 없습니다.</div>) : (
               <ul className="space-y-3">{popupInfo.participants.map((n, idx) => (
-                <li key={idx} className="flex items-center gap-3"><div className="w-9 h-9 rounded-full text-white flex items-center justify-center font-medium text-sm" style={{ backgroundColor: currentColors.main }}>{getInitials(n)}</div><div className="text-sm" style={{ color: currentColors.textPrimary || undefined }}>{n}</div></li>
+                <li key={idx} className="flex items-center gap-3"><div className="w-9 h-9 rounded-full text-white flex items-center justify-center font-medium text-sm" style={{ backgroundColor: currentColors.main }}>{getInitials(n)}</div><div className="text-sm" style={{ color: (currentColors as any).textPrimary || undefined }}>{n}</div></li>
               ))}</ul>
             )}
           </div>
-          <div className="px-4 py-2 text-center text-xs" style={{ borderTop: `1px solid ${currentColors.shades?.[10] || '#f0f0f0'}`, color: currentColors.textSecondary || '#6b7280' }}>총 {popupInfo.participants.length}명 참여</div>
+          <div className="px-4 py-2 text-center text-xs" style={{ borderTop: `1px solid ${currentColors.shades?.[10] || '#f0f0f0'}`, color: (currentColors as any).textSecondary || '#6b7280' }}>총 {popupInfo.participants.length}명 참여</div>
         </div>
       </motion.div>,
       rootRef.current
@@ -125,6 +117,11 @@ export default function CalendarCard({
     document.addEventListener("click", handleDocClick);
     return () => document.removeEventListener("click", handleDocClick);
   }, []);
+
+  /* 선택된 날짜의 참여자 목록 (popupInfo 기반) */
+  const selectedParticipants = popupInfo?.dateKey
+    ? (participantsMap[popupInfo.dateKey] || []).map((uid) => userMap[uid] || "Unknown")
+    : [];
 
   return (
     <Card className="flex-1 p-6 md:p-10 min-h-[500px] md:min-h-[600px]">
@@ -367,8 +364,11 @@ export default function CalendarCard({
                         setPopupInfo({ left, top, participants: [], dateKey: key });
                       }
                     }}
-                    className={`h-16 md:h-24 rounded-lg md:rounded-xl p-1.5 md:p-3 text-xs md:text-sm transition
-                    ${activeTab === "total" ? `${getCellColor(percent).className} cursor-pointer` : "bg-gray-100"}`}
+                    className={`h-16 md:h-24 rounded-lg md:rounded-xl p-1.5 md:p-3 text-xs md:text-sm transition ${
+                      activeTab === "total"
+                        ? `${getCellColor(percent).className} cursor-pointer`
+                        : "bg-gray-100"
+                    }`}
                     style={activeTab === "total" ? getCellColor(percent).style : {}}
                   >
                     <div className="text-[10px] md:text-xs font-medium">
@@ -425,6 +425,7 @@ export default function CalendarCard({
         {popupPortal}
         </>
       )}
+
       </div>
     </Card>
   );

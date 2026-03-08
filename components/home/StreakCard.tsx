@@ -12,7 +12,6 @@ import Card from "@/components/ui/Card";
 import { Flame, Trophy, Award } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
-const MotionCard = motion(Card);
 
 export default function StreakCard({
   streak,
@@ -104,17 +103,17 @@ export default function StreakCard({
   const style = getIntensity();
 
   return (
-    <MotionCard
+    <Card
       whileHover={{
         scale: 1.02,
-        boxShadow: `0 0 50px ${currentColors.main}40`,
+        y: -4,
+        boxShadow: `0 20px 50px ${currentColors.main}30`,
         borderColor: `${currentColors.main}60`
       }}
-      className="relative h-full overflow-hidden p-8 flex flex-col items-center justify-center border transition-all duration-700 shadow-2xl"
+      className="relative h-full overflow-hidden p-8 flex flex-col items-center justify-center border shadow-2xl"
       style={{
         background: "rgba(255, 255, 255, 0.85)",
         backdropFilter: "blur(20px)",
-        boxShadow: `0 10px 30px -5px rgba(0,0,0,0.1), 0 0 20px ${currentColors.main}15`,
         borderColor: `${currentColors.main}30`
       }}
     >
@@ -224,6 +223,6 @@ export default function StreakCard({
         </motion.div>
       </div>
 
-    </MotionCard>
+    </Card>
   );
 }

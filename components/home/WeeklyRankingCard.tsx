@@ -1,8 +1,8 @@
 "use client";
 
+import Card from "@/components/ui/Card";
 import TierBadge from "@/components/ui/TierBadge";
 import { useTheme } from "@/context/ThemeContext";
-import Card from "@/components/ui/Card";
 interface RankingItem {
   userId: string;
   total: number;

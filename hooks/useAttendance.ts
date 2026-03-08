@@ -45,6 +45,9 @@ export function useAttendance(user: any) {
   const [totalMap, setTotalMap] =
     useState<Record<string, number>>({});
 
+  const [participantsMap, setParticipantsMap] =
+    useState<Record<string, string[]>>({});
+
   const [activeTab, setActiveTab] =
     useState<"total" | "personal" | "history">("total");
 
@@ -91,6 +94,7 @@ export function useAttendance(user: any) {
       const personalMap: Record<string, string> = {};
       const approvedDates: string[] = [];
       const totalDateMap: Record<string, number> = {};
+      const dateParticipants: Record<string, string[]> = {};
 
       snapshot.forEach((doc) => {
         const d = doc.data();
@@ -113,11 +117,18 @@ export function useAttendance(user: any) {
         if (d.status === "approved") {
           totalDateMap[normalizedDate] =
             (totalDateMap[normalizedDate] || 0) + 1;
+          if (!dateParticipants[normalizedDate]) {
+            dateParticipants[normalizedDate] = [];
+          }
+          if (!dateParticipants[normalizedDate].includes(d.userId)) {
+            dateParticipants[normalizedDate].push(d.userId);
+          }
         }
       });
 
       setAttendanceMap(personalMap);
       setTotalMap(totalDateMap);
+      setParticipantsMap(dateParticipants);
       calculateStreak(approvedDates);
     });
 
@@ -318,6 +329,7 @@ export function useAttendance(user: any) {
   return {
     attendanceMap,
     totalMap,
+    participantsMap,
     activeTab,
     setActiveTab,
     currentMonth,
