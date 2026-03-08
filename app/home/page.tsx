@@ -86,6 +86,19 @@ export default function HomePage() {
       >
         {/* 1. DASHBOARD OVERVIEW */}
         <section className="space-y-10">
+          {/* 🔥 Attendance (light) */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <AttendanceLightCard
+              user={authState.user}
+              streak={attendance.streak}
+              onOpenModal={() => attendance.setModalOpen(true)}
+            />
+          </motion.div>
+
           {/* 🔥 Notice */}
           <motion.div variants={item}>
             <NoticeCard />
