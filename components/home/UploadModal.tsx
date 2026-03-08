@@ -42,8 +42,6 @@ export default function UploadModal({
   setProblemCount,
 }: UploadModalProps) {
 
-  if (!modalOpen) return null;
-
   const firstRef = useRef<HTMLInputElement | null>(null);
 
   function safeClose() {
@@ -65,6 +63,8 @@ export default function UploadModal({
   }
 
   useEffect(() => {
+    if (!modalOpen) return;
+
     // lock background scroll while modal is open (reference-counted)
     const win = window as any;
     if (!win.__modalLockCount) {
@@ -84,12 +84,15 @@ export default function UploadModal({
       document.body.style.overflow = "hidden";
     }
     win.__modalLockCount++;
+
     // focus the first input
     setTimeout(() => firstRef.current?.focus(), 0);
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") safeClose();
     };
     document.addEventListener("keydown", onKey);
+
     return () => {
       document.removeEventListener("keydown", onKey);
       const win = window as any;
@@ -105,7 +108,9 @@ export default function UploadModal({
         }
       }
     };
-  }, []);
+  }, [modalOpen]);
+
+  if (!modalOpen) return null;
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTheme } from "@/context/ThemeContext";
-import { ExternalLink, Newspaper, Bot, Trophy, Briefcase, Sparkles, TrendingUp, Zap, FileText, Search, GraduationCap, ChevronDown, ChevronUp } from "lucide-react";
+import { ExternalLink, Newspaper, Bot, Trophy, Briefcase, Sparkles, TrendingUp, Zap, FileText, Search, GraduationCap, ChevronDown, ChevronUp, Rocket } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface QuickLink {
@@ -20,6 +20,11 @@ const LEFT_LINKS: QuickLink[] = [
     { title: "HF Space", url: "https://huggingface.co/spaces", desc: "최신 AI 데모", icon: <TrendingUp size={18} />, gradient: "from-purple-500 to-pink-400", tag: "DEMO" },
     { title: "AI 타임스", url: "https://www.aitimes.com", desc: "실시간 AI 뉴스", icon: <Newspaper size={18} />, gradient: "from-blue-500 to-cyan-400", tag: "NEWS" },
     { title: "긱뉴스", url: "https://news.hada.io", desc: "테크 오피니언", icon: <Zap size={18} />, gradient: "from-emerald-500 to-teal-400", tag: "TECH" },
+];
+
+const BLOG_LINKS: QuickLink[] = [
+    { title: "블로그 제출 바로가기", url: "https://docs.google.com/spreadsheets/d/1IITcB0oCHQZq7V2GITx4PsB_vaCafmhyh69yl51H1JI/edit?usp=sharing", desc: "스터디 블로그 모음", icon: <Rocket size={18} />, gradient: "from-amber-400 to-orange-400", tag: "LIST" },
+    { title: "Velog", url: "https://velog.io/", desc: "개발자 기술 블로그", icon: <Bot size={18} />, gradient: "from-emerald-500 to-teal-400", tag: "TECH" },
 ];
 
 const RIGHT_CONTESTS: QuickLink[] = [
@@ -85,7 +90,7 @@ export default function QuickLinksHub({ side, mobile }: { side: "left" | "right"
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{title}</span>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1 mask-linear-r">
-                    {(side === "left" ? LEFT_LINKS : [...RIGHT_CONTESTS, ...RIGHT_JOBS]).map((link, i) => renderLink(link, i, true))}
+                    {(side === "left" ? [...LEFT_LINKS, ...BLOG_LINKS] : [...RIGHT_CONTESTS, ...RIGHT_JOBS]).map((link, i) => renderLink(link, i, true))}
                 </div>
             </div>
         );
@@ -103,7 +108,41 @@ export default function QuickLinksHub({ side, mobile }: { side: "left" | "right"
 
             {side === "left" ? (
                 <div className="w-full">
-                    {LEFT_LINKS.map((link, i) => renderLink(link, i))}
+                    {/* News Section */}
+                    <div className="mb-4">
+                        <div className="px-3 py-1 mb-2 flex items-center gap-1.5">
+                            <Newspaper size={10} className="text-blue-400" />
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">AI & News</span>
+                        </div>
+                        {LEFT_LINKS.slice(0, isExpanded ? LEFT_LINKS.length : 3).map((link, i) => renderLink(link, i))}
+
+                        {/* Toggle Button for AI News */}
+                        <button
+                            onClick={() => setIsExpanded(!isExpanded)}
+                            className="mt-2 mb-6 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 text-[10px] font-bold text-gray-400 hover:bg-white hover:text-brand hover:border-brand/30 hover:shadow-sm transition-all duration-300 group"
+                        >
+                            {isExpanded ? (
+                                <>
+                                    <ChevronUp size={12} className="group-hover:-translate-y-0.5 transition-transform" />
+                                    접기
+                                </>
+                            ) : (
+                                <>
+                                    <ChevronDown size={12} className="group-hover:translate-y-0.5 transition-transform" />
+                                    더보기
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Blog Section */}
+                    <div>
+                        <div className="px-3 py-1 mb-2 flex items-center gap-1.5 border-t border-gray-50 pt-3">
+                            <FileText size={10} className="text-amber-400" />
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">Blog Zone</span>
+                        </div>
+                        {BLOG_LINKS.map((link, i) => renderLink(link, i))}
+                    </div>
                 </div>
             ) : (
                 <div className="w-full">
