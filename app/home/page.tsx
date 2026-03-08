@@ -7,6 +7,7 @@ import { db } from "@/lib/firebase";
 
 import Header from "@/components/ui/Header";
 import NoticeCard from "@/components/home/NoticeCard";
+import AttendanceLightCard from "@/components/home/AttendanceLightCard";
 import StreakCard from "@/components/home/StreakCard";
 import CalendarCard from "@/components/home/CalendarCard";
 import UploadModal from "@/components/home/UploadModal";
@@ -64,15 +65,29 @@ export default function HomePage() {
 
   return (
     <div className="bg-[#f4f6f9] min-h-screen pb-20">
-      <Header
-        user={authState.user}
-        onLogout={authState.logout}
-      />
-
       <div className="max-w-7xl mx-auto px-4 py-8 md:p-8 lg:p-12 space-y-12">
+        <Header
+          user={authState.user}
+          onLogout={authState.logout}
+        />
+        {/* spacer to account for fixed Header height so content isn't hidden */}
+        <div className="h-12 md:h-16" />
 
         {/* 1. DASHBOARD OVERVIEW (메인 대시보드 - 단일 뷰) */}
         <section className="space-y-8">
+          {/* 🔥 Attendance (light) */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <AttendanceLightCard
+              user={authState.user}
+              streak={attendance.streak}
+              onOpenModal={() => attendance.setModalOpen(true)}
+            />
+          </motion.div>
+
           {/* 🔥 Notice */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -122,6 +137,7 @@ export default function HomePage() {
                 attendanceMap={attendance.attendanceMap}
                 totalMap={attendance.totalMap}
                 userCount={usersState.userCount}
+                userMap={usersState.userMap}
                 userId={authState.user?.uid}
                 onOpenModal={() =>
                   attendance.setModalOpen(true)

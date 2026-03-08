@@ -67,33 +67,28 @@ export default function StreakCard({
   ========================= */
   useEffect(() => {
     if (streak > prevStreak.current && streak > 0) {
-      // 스트릭에 따라 지속 시간 조절 (최소 2초 ~ 최대 15초)
-      const duration = Math.min(Math.max(streak * 1000, 2000), 15000);
-      const animationEnd = Date.now() + duration;
+      // 짧고 가벼운 폭죽 효과로 변경 (사용자 렉 완화)
+      const bursts = streak >= 30 ? 4 : streak >= 7 ? 3 : 2;
+      const baseCount = streak >= 30 ? 80 : streak >= 7 ? 50 : 30;
 
-      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-      const interval: any = setInterval(function () {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
-
-        // 스트릭이 높을수록 폭죽 강도 증가
-        const intensity = streak >= 30 ? 1.5 : streak >= 7 ? 1.2 : 1.0;
-        const particleCount = (50 * intensity) * (timeLeft / duration);
-
-        confetti({
-          particleCount,
-          spread: streak >= 7 ? 100 : 60,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-          colors: streak >= 30 ? ['#FFD700', '#FFA500', '#FF4500'] : undefined
-        });
-        confetti({
-          particleCount,
-          spread: streak >= 7 ? 100 : 60,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-          colors: streak >= 30 ? ['#FFD700', '#FFA500', '#FF4500'] : undefined
-        });
-      }, 250);
+      for (let i = 0; i < bursts; i++) {
+        setTimeout(() => {
+          const left = Math.random() * 0.4 + 0.05;
+          const right = Math.random() * 0.4 + 0.55;
+          confetti({
+            particleCount: Math.round(baseCount * (0.8 + Math.random() * 0.4)),
+            spread: streak >= 7 ? 80 : 60,
+            origin: { x: left, y: Math.random() * 0.2 },
+            colors: streak >= 30 ? ['#FFD700', '#FFA500', '#FF4500'] : undefined,
+          });
+          confetti({
+            particleCount: Math.round(baseCount * (0.6 + Math.random() * 0.4)),
+            spread: streak >= 7 ? 80 : 60,
+            origin: { x: right, y: Math.random() * 0.2 },
+            colors: streak >= 30 ? ['#FFD700', '#FFA500', '#FF4500'] : undefined,
+          });
+        }, i * 180);
+      }
     }
     prevStreak.current = streak;
   }, [streak]);

@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useRef } from "react";
 
 interface UploadModalProps {
   modalOpen: boolean;
@@ -42,6 +44,69 @@ export default function UploadModal({
 
   if (!modalOpen) return null;
 
+  const firstRef = useRef<HTMLInputElement | null>(null);
+
+  function safeClose() {
+    const win = window as any;
+    if (win.__modalLockCount) {
+      win.__modalLockCount = 0;
+    }
+    if (win.__modalPrevPaddingRight !== undefined) {
+      document.body.style.paddingRight = win.__modalPrevPaddingRight;
+      win.__modalPrevPaddingRight = undefined;
+    }
+    document.body.style.overflow = win.__modalPrevOverflow ?? "";
+    win.__modalPrevOverflow = undefined;
+    try {
+      onClose();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  useEffect(() => {
+    // lock background scroll while modal is open (reference-counted)
+    const win = window as any;
+    if (!win.__modalLockCount) {
+      win.__modalLockCount = 0;
+      win.__modalPrevOverflow = undefined;
+      win.__modalPrevPaddingRight = undefined;
+    }
+
+    if (win.__modalLockCount === 0) {
+      // preserve existing padding to avoid layout shift when removing scrollbar
+      const scrollBarGap = window.innerWidth - document.documentElement.clientWidth;
+      if (scrollBarGap > 0) {
+        win.__modalPrevPaddingRight = document.body.style.paddingRight;
+        document.body.style.paddingRight = `${scrollBarGap}px`;
+      }
+      win.__modalPrevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    win.__modalLockCount++;
+    // focus the first input
+    setTimeout(() => firstRef.current?.focus(), 0);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") safeClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      const win = window as any;
+      if (win.__modalLockCount) {
+        win.__modalLockCount--;
+        if (win.__modalLockCount === 0) {
+          if (win.__modalPrevPaddingRight !== undefined) {
+            document.body.style.paddingRight = win.__modalPrevPaddingRight;
+            win.__modalPrevPaddingRight = undefined;
+          }
+          document.body.style.overflow = win.__modalPrevOverflow ?? "";
+          win.__modalPrevOverflow = undefined;
+        }
+      }
+    };
+  }, []);
+
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
 
@@ -73,6 +138,11 @@ export default function UploadModal({
 
   return (
     <div
+      role="presentation"
+      onClick={(e) => {
+        // clicks on backdrop should close
+        if (e.target === e.currentTarget) safeClose();
+      }}
       style={{
         position: "fixed",
         inset: 0,
@@ -80,14 +150,20 @@ export default function UploadModal({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
+        zIndex: 99999,
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="출석 인증"
+        onClick={(e) => e.stopPropagation()}
         style={{
           background: "white",
-          padding: "40px",
-          borderRadius: "20px",
+          padding: "28px",
+          borderRadius: "14px",
           width: "420px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.12)",
         }}
       >
         <h3>출석 인증</h3>
@@ -96,6 +172,7 @@ export default function UploadModal({
         <div style={{ marginTop: "10px" }}>
           <label style={{ fontSize: "14px" }}>날짜 선택</label>
           <input
+            ref={firstRef}
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
@@ -208,7 +285,7 @@ export default function UploadModal({
         </button>
 
         <button
-          onClick={onClose}
+          onClick={safeClose}
           style={{
             marginTop: "10px",
             width: "100%",

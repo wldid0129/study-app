@@ -5,6 +5,7 @@ interface ButtonProps {
   onClick?: () => void;
   variant?: "primary" | "secondary";
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export default function Button({
@@ -12,6 +13,7 @@ export default function Button({
   onClick,
   variant = "primary",
   className,
+  style,
 }: ButtonProps) {
   const { currentColors } = useTheme();
 
@@ -27,7 +29,7 @@ export default function Button({
     <button
       onClick={onClick}
       className={`${base} ${styles} ${className || ""}`}
-      style={variant === "primary" ? { backgroundColor: currentColors.main } : {}}
+      style={{ ...(variant === "primary" ? { backgroundColor: currentColors.main } : {}), ...(style || {}) }}
     >
       {children}
     </button>

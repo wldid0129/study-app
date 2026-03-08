@@ -2,6 +2,7 @@
 
 import { DisplayGoal, Goal } from "@/types/goal";
 import { motion } from "framer-motion";
+import Card from "@/components/ui/Card";
 
 export default function WeeklyGoalCard({
   goal,
@@ -11,9 +12,8 @@ export default function WeeklyGoalCard({
   isSuccess: boolean;
 }) {
   if (!goal) return null;
-
   return (
-    <div className="p-8 rounded-2xl shadow bg-white border border-gray-200 relative">
+    <Card className="p-8 relative border border-gray-200 transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
 
       <div className="text-sm text-gray-500">
         🎯 이번 주 목표
@@ -52,7 +52,7 @@ export default function WeeklyGoalCard({
           SUCCESS
         </motion.div>
       )}
-    </div>
+    </Card>
   );
 }
 

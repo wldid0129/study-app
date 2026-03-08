@@ -14,7 +14,7 @@ export default function DailyGoalCard({
   if (!goal) return null;
 
   return (
-    <Card className="p-8 border border-gray-200 relative">
+    <Card className="p-8 border border-gray-200 relative transition-transform duration-200 hover:-translate-y-1 hover:shadow-lg">
 
       <div className="text-sm text-gray-500">
         📌 오늘의 목표
