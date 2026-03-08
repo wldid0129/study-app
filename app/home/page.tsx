@@ -78,6 +78,9 @@ export default function HomePage() {
         onLogout={authState.logout}
       />
 
+      {/* spacer for fixed Header */}
+      <div className="h-24 md:h-28" />
+
       <motion.main 
         variants={container}
         initial="hidden"
