@@ -4,12 +4,17 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
+  // API 키는 이미 Vercel에 등록하셨으니 이대로 둡니다.
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY as string,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN as string,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID as string,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET as string,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID as string,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID as string,
+
+  // 나머지 값들은 스크린샷에서 확인한 정보로 직접 채워 넣습니다.
+  authDomain: "programmers-study.firebaseapp.com",
+  projectId: "programmers-study",
+  storageBucket: "programmers-study.appspot.com",
+  
+  // 아래 두 값은 파이어베이스 콘솔 '내 앱' 설정에서 확인 후 직접 수정해 주세요!
+  messagingSenderId: "90152775832", // 스크린샷의 프로젝트 번호입니다.
+  appId: "1:90152775832:web:여기에_본인의_AppID_입력" 
 };
 
 const app = initializeApp(firebaseConfig);
