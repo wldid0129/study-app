@@ -14,7 +14,7 @@ const firebaseConfig = {
   
   // 아래 두 값은 파이어베이스 콘솔 '내 앱' 설정에서 확인 후 직접 수정해 주세요!
   messagingSenderId: "90152775832", // 스크린샷의 프로젝트 번호입니다.
-  appId: "1:90152775832:web:여기에_본인의_AppID_입력" 
+  appId: "1:90152775832:web:01cad5255d74acd19da0ed" 
 };
 
 const app = initializeApp(firebaseConfig);
